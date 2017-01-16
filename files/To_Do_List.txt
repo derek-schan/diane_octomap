@@ -1,0 +1,22 @@
+TO DO:
+
+
+- Identificacão da escada (estático - não há atualizacão do mapa de acordo com a movimentacão do robô)
+
+	- Filtrar a octree geral somente com o que está em frente ao robô (solucão temporária para possuir somente voxels referentes à escada);
+		- Está sendo aplicado um filtro por Bounding Box (estamos considerando que a escada está na frente do robô, aplicando o filtro no eixo x);
+	- Armazenar em uma estrutura (?);
+	- Identificar as arestas da escada (posicão no espaco);
+	- Armazenar as informacões da escada em alguma estrutura;
+
+- Integracão com o Controle implementado:
+
+	- Entender o funcionamento do Controle e identificar o que o mesmo espera de entrada;
+	- Publicar as informacões para o tópico do qual o Controle é subescrito (caso leia de uma mensagem);
+	- Ou requisitar o servico do Controle caso seja um servico;
+	- Verificar se a integracão está funcionando (se está recebendo, tratando e repassando os comandos corretos para o diane)
+
+- Implementacão do Controle (Caso não seja possível reutilizar puramente o que o Tiago fez):
+
+	- Entender o funcionamento do controle
+	- Reimplementar (em C++?);

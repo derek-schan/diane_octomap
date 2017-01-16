@@ -27,3 +27,15 @@
 *.exe
 *.out
 *.app
+
+#Arquivos de compilação não devem ser enviados para o repositório
+build/*
+
+#Arquivos CMakeLists.txt.user não devem ser enviados para o repositório
+CMakeLists.txt.user
+
+#Arquivos temporários não devem ser enviados para o repositório
+*.*~
+
+#Arquivos wrl não devem ser enviados para o repositório
+*.wrl

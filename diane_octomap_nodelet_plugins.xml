@@ -1,0 +1,5 @@
+<library path="lib/libdiane_octomap_lib">
+  <class name="diane_octomap/DianeOctomapNodelet" type="diane_octomap::DianeOctomapNodelet" base_class_type="nodelet::Nodelet">
+    <description>This is the Diane_Octomap Nodelet.</description>
+  </class>
+</library>
