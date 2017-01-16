@@ -74,7 +74,7 @@ void diane_octomap::DianeOctomap::InternalCycleProcedure()
 
 void diane_octomap::DianeOctomap::GenerateOcTreeFromFile()
 {
-    string otFileName = "/home/derekchan/catkin_workspace/src/sistema_observacao/files/MapFiles/Octree/Escada_Kinect_5.ot";
+    string otFileName = "/home/rob/catkin_ws/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_5.ot";
 
     AbstractOcTree* abs_tree = AbstractOcTree::read(otFileName);
     if(abs_tree) // read error returns NULL
@@ -148,29 +148,49 @@ void diane_octomap::DianeOctomap::GetOccupiedLeafsOfBBX(OcTree* octree)
 void diane_octomap::DianeOctomap::StairDetection()
 {
     //Tentando acessar os dados das folhas
-    for(int i = 0; i < OccupiedLeafsInBBX.size(); i++)
+    int R, countall;
+    double nx,ny,nz,dmin,dmax;
+
+    R=0;
+    countall = 0;
+double dk=sqrt(3)/3;
+//    nx=sqrt(2)/2;
+//    ny=sqrt(2)/2;
+    nx=0;
+    ny=1;
+    nz=0;
+    dmax=0.7;
+    dmin=0;
+    for(int i = 0; i < OccupiedLeafsInBBX.size()-1; i++)
     {
-        OcTree::leaf_bbx_iterator leaf_it = OccupiedLeafsInBBX.at(i);
+        for(int j=i+1; j<OccupiedLeafsInBBX.size();j++)
+        {
+            OcTree::leaf_bbx_iterator leaf_it = OccupiedLeafsInBBX.at(i);
+            OcTree::leaf_bbx_iterator leaf_itj = OccupiedLeafsInBBX.at(j);
+            double x,y,z,Q,dist;
 
-        string Result = "Folha ";
-        ostringstream convert_i;
-        ostringstream convert_x;
-        ostringstream convert_y;
-        ostringstream convert_z;
+            dist=sqrt(pow(leaf_it.getX()-leaf_itj.getX(),2)+pow(leaf_it.getY()-leaf_itj.getY(),2)+pow(leaf_it.getZ()-leaf_itj.getZ(),2));
 
-        convert_i << i + 1;
-        Result = convert_i.str() + ": x = ";
-        convert_x << leaf_it.getX();
-        Result = Result + convert_x.str() + "; y = ";
-        convert_y << leaf_it.getY();
-        Result = Result + convert_y.str() + "; z = ";
-        convert_z << leaf_it.getZ();
-        Result = Result + convert_z.str();
+            if(dist>dmin && dist<dmax){
+                x= (leaf_it.getX()-leaf_itj.getX())/dist;
+                y= (leaf_it.getY()-leaf_itj.getY())/dist;
+                z= (leaf_it.getZ()-leaf_itj.getZ())/dist;
 
-        cout << Result << endl;
+                Q=x*nx+ny*y+z*nz;
+
+                if( abs(Q) < 0.005)
+                {
+                    R = R + 1;
+                }
+
+                countall = countall + 1;
+                }
+//          cout<<"X: "<<x<<" Y: "<<y<<" Z: "<<z<<" Xi: "<< leaf_it.getX()<<" Yi: "<< leaf_it.getY()<<" Zi: "<< leaf_it.getZ()<<" Xj: "<< leaf_itj.getX()<<" Yj: "<< leaf_itj.getY()<<" Zj: "<< leaf_itj.getZ()<<endl;
+        }
 
     }
 
+    cout<<"R: "<< R <<" total: "<< countall << " %: "<<  R*100/countall << endl;
 }
 
 
