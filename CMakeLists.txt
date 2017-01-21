@@ -213,3 +213,9 @@ target_link_libraries(diane_octomap
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+
+set(CMAKE_BUILD_TYPE Debug)
+
+#add c++11 capabilities
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+

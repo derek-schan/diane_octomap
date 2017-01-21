@@ -31,6 +31,15 @@ using namespace std;
 namespace diane_octomap {
 
 
+struct maxcompare
+{
+    bool operator()(int* ip1, int* ip2) const
+    {
+        return (ip1[0] >ip2[0]);
+    }
+};
+
+
 
 /*!
  * \class DianeOctomap
@@ -70,6 +79,32 @@ protected:
 
     vector<OcTree::leaf_bbx_iterator> OccupiedLeafsInBBX;
 
+    //Variáveis referentes à Transformada de Hough
+    double Rho_Min;
+    double Rho_Max;
+    double Theta_Min;   //Em graus
+    double Theta_Max;   //Em graus
+    double Phi_Min;     //Em graus
+    double Phi_Max;     //Em graus
+
+    double Rho_Passo;   //Incremento em Rho
+    double Theta_Passo; //Incremento em Theta
+    double Phi_Passo;   //Incremento em Phi
+
+    double Rho_Num;
+    double Theta_Num;
+    double Phi_Num;
+    double Max_Distance;
+
+    vector<vector<vector<int>>> Accumulator;
+
+    //Variáveis para filtrar os planos a serem extraídos
+    double Filter_Phi_Min = 85;
+    double Filter_Phi_Max = 96;
+    double Filter_Vote_Min = 250;
+    double Filter_Vote_Max = 400;
+
+
 public:
     DianeOctomap();
 
@@ -101,6 +136,32 @@ public:
 
     //A identificacão da escada será sobre o vetor de folhas contidas dentro do Bounding Box
     void StairDetection();
+
+
+    //Metodos para Transformada de Hough
+    void PlanesHoughTransform(double length, double width, double height);
+
+
+    void InitializeAccumulator();
+
+
+    void AccumulatePoint(OcTree::leaf_bbx_iterator p);
+
+
+    vector<vector<double>> getFilteredPlanes();
+
+
+    void MergePlanes(vector<vector<double>> Planes);
+
+
+    void PrintAccumulator();
+
+
+    /**
+     * Returns a sorted list of the all cells in the accumulator.
+     * @return a sorted multiset containing the cells as (counter, rho_index, theta_index, phi_index)
+     */
+    multiset<int*, maxcompare>* getMax();
 
 
     virtual ~DianeOctomap();

@@ -3,10 +3,12 @@
    <arg name="manager" default="diane_octomap_manager"/>
    <arg name="namespace" default="r"/>
    
-   <node ns="$(arg namespace)" pkg="nodelet" type="nodelet" name="$(arg manager)" args="manager"/>
+   <!--<node ns="$(arg namespace)" pkg="nodelet" type="nodelet" name="$(arg manager)" args="manager"/>-->
 
    <node pkg="tf" type="static_transform_publisher" name="simple_tf_kinect_broadcaster_node" args="0 0 0 0 0 0 my_frame map 100" />
 
-   <node ns="$(arg namespace)" pkg="nodelet" type="nodelet" name="diane_octomap" args="load diane_octomap/DianeOctomapNodelet $(arg manager)"/>
+   <!--<node ns="$(arg namespace)" pkg="nodelet" type="nodelet" name="diane_octomap" args="load diane_octomap/DianeOctomapNodelet $(arg manager)"/>-->
+
+   <node pkg="nodelet" type="nodelet" name="diane_octomap" args="load diane_octomap/DianeOctomapNodelet $(arg manager)"/>
 
 </launch>
