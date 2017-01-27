@@ -31,14 +31,79 @@ using namespace std;
 namespace diane_octomap {
 
 
-struct maxcompare
+//Estrutura que armazenará as folhas referentes à esse degrau e as informacões de um degrau (comprimento, largura e altura)
+class Step
 {
-    bool operator()(int* ip1, int* ip2) const
-    {
-        return (ip1[0] >ip2[0]);
-    }
+protected:
+
+public:
+    vector<OcTree::leaf_bbx_iterator> Leafs_In_Step;
+    double Step_Length;
+    double Step_Width;
+    double Step_Height;
+
+    double Step_Min_Z = 1000;
+    double Step_Max_Z = -1000;
+    double Step_Mean_Z = 0;
+
+    vector<double> Step_Plane;
+
+    Step();
+
+    void CalculateStepProperties();
+
+    virtual ~Step();
+
 };
 
+
+//Estrutura que armazenará informacões de uma escada (comprimento total, largura total e altura total).
+class Stair
+{
+protected:
+
+public:
+    vector<Step*> Steps;
+
+    vector<OcTree::leaf_bbx_iterator> Leafs_In_Stair;
+
+    double Total_Length;
+    double Total_Width;
+    double Total_Height;
+
+    double Min_X = 1000;
+    double Max_X = -1000;
+    double Min_Y = 1000;
+    double Max_Y = -1000;
+    double Min_Z = 1000;
+    double Max_Z = -1000;
+
+
+    int Num_Steps = 0;
+    double Step_Length = 0;
+    double Step_Width = 0;
+    double Step_Height = 0;
+
+    //(Xi,Yi) e (Xf,Yf)
+    vector<double> Aresta;
+
+
+    Stair();
+
+    //Método referente à ordenacão dos degraus
+    void SortSteps();
+
+    //Método para obter as folhas presentes nos degraus
+    void ExtractLeafsFromSteps();
+
+
+    //Método obtendo os X, Y e Z mínimos e máximos da escada
+    void CalculateStairProperties();
+
+
+    virtual ~Stair();
+
+};
 
 
 /*!
@@ -77,6 +142,8 @@ protected:
     OcTree* octree;
     OcTree* octreeFromMsg;
 
+    double Octree_Resolution;
+
     vector<OcTree::leaf_bbx_iterator> OccupiedLeafsInBBX;
 
     //Variáveis referentes à Transformada de Hough
@@ -94,7 +161,9 @@ protected:
     double Rho_Num;
     double Theta_Num;
     double Phi_Num;
-    double Max_Distance;
+
+    //Diferenca máxima entre o Rho do ponto e o Rho da célula para ser considerado como um voto
+    double Max_Planes_Distance = 0.1;
 
     vector<vector<vector<int>>> Accumulator;
 
@@ -103,6 +172,22 @@ protected:
     double Filter_Phi_Max = 96;
     double Filter_Vote_Min = 250;
     double Filter_Vote_Max = 400;
+
+    //Definindo as tolerâncias para o merge dos planos
+    double delta_Rho = 0.1;
+    double delta_Theta = 0;
+    double delta_Phi = 0;
+
+    //Definindo variáveis resultantes do histograma
+    double Histogram_Dist_Min;
+    double Histogram_Dist_Max;
+
+    //Definindo características da escada
+    int Min_Num_Steps = 3;
+    double Min_Step_Width = 0.25;
+    double Max_Step_Width = 0.35;
+    double Min_Step_Height = 0.09;
+    double Max_Step_Height = 0.20;
 
 
 public:
@@ -139,7 +224,7 @@ public:
 
 
     //Metodos para Transformada de Hough
-    void PlanesHoughTransform(double length, double width, double height);
+    vector<vector<double>> PlanesHoughTransform(double length, double width, double height);
 
 
     void InitializeAccumulator();
@@ -148,20 +233,65 @@ public:
     void AccumulatePoint(OcTree::leaf_bbx_iterator p);
 
 
-    vector<vector<double>> getFilteredPlanes();
+    vector<vector<double>> GetFilteredPlanes();
 
 
-    void MergePlanes(vector<vector<double>> Planes);
+
+    //Métodos para merge dos planos que são praticamente coplanares
+    vector<vector<double>> MergePlanes(vector<vector<double>> Planes);
 
 
+    bool CanMergePlanes(vector<double> PlaneA, vector<double> PlaneB);
+
+
+    vector<double> FitPlane(vector<double> PlaneA, vector<double> PlaneB);
+
+
+
+    //Método para agrupar os planos pelo (Theta e Phi)
+    vector<vector<vector<double>>> GroupPlanesByThetaPhi(vector<vector<double>> Planes);
+
+
+
+    //Métodos referentes à criacão do Histograma (Necessário? Está funcionando somente como um filtro)
+    vector<vector<vector<double>>> GenerateHistogram(vector<vector<vector<double>>> SameAnglesPlanes);
+
+
+    //Metodo para extracao dos planos que passaram pelo filtro do histograma
+    vector<vector<vector<double>>> ExtractValidPlanes(map<vector<vector<double>>, double> Planes_Dist_Map);
+
+
+    //Método de filtro do conjunto de planos
+    vector<vector<vector<double>>> FilterGroups(vector<vector<vector<double>>> Groups_Planes);
+
+
+    //Método que verifica se há uma sequência
+    bool VerifySequence(vector<vector<double>> Group_Planes);
+
+
+
+    vector<Stair*> StairCandidatesDetection(vector<vector<vector<double>>> Grouped_Planes);
+
+
+    //Métodos referentes à aplicacão dos planos encontrados no octomap.
+    Stair* ObtainStairCandidateFromGroup(vector<vector<double>> Group_Planes);
+
+
+    void StepHistogram(Step* step);
+
+
+
+    //Métodos referentes à couts e à escrita em arquivos
     void PrintAccumulator();
 
 
-    /**
-     * Returns a sorted list of the all cells in the accumulator.
-     * @return a sorted multiset containing the cells as (counter, rho_index, theta_index, phi_index)
-     */
-    multiset<int*, maxcompare>* getMax();
+    void WriteFilteredPlanesToFile(vector<vector<double>> Filtered_Planes);
+
+
+    void WriteMergedPlanesToFile(vector<vector<double>> Merged_Planes);
+
+
+    void WriteStairToFile(diane_octomap::Stair* Stair);
 
 
     virtual ~DianeOctomap();

@@ -87,6 +87,8 @@ void diane_octomap::DianeOctomap::GenerateOcTreeFromFile()
             //Expandindo a octree
             octree->expand();
 
+            Octree_Resolution = octree->getResolution();
+
             size_t occupied_count(0);
 
             size_t free_count(0);
@@ -151,7 +153,13 @@ void diane_octomap::DianeOctomap::GetOccupiedLeafsOfBBX(OcTree* octree)
 
 void diane_octomap::DianeOctomap::StairDetection()
 {
-    //Obtendo os mínimos e os máximos (para obter o comprimento, a largura e a altura)
+    //Início da marcacão de tempo de execucao da funcão
+    time_t t_begin, t_end;
+
+    t_begin = time(0);
+
+
+    //Obtendo os mínimos e os máximos (para obter o comprimento, a largura e a altura) --- Para Utilizar na Transformada de Hough
     double min_x = 0, max_x = 0, min_y = 0, max_y = 0, min_z = 0, max_z = 0;
 
     for(int i = 0; i < OccupiedLeafsInBBX.size(); i++)
@@ -190,24 +198,323 @@ void diane_octomap::DianeOctomap::StairDetection()
     double width = max_y - min_y;
     double height = max_z - min_z;
 
-    PlanesHoughTransform(length, width, height);
+
+
+    //***Realizando a transformada de Hough e aplicando um filtro para obter somente os planos que receberam uma quantidade de votos dentro de um intervalo limite***
+    //***O intervalo limite deve ser apdatativo (caso a resolucão do octomap mude, não saberemos qual será o intervalo limite correto)***
+    vector<vector<double>> Hough_Planes = PlanesHoughTransform(length, width, height);
+
+//    //Escrevendo nos arquivos os planos resultantes da Transformada de Hough (para plot no Matlab);
+    WriteFilteredPlanesToFile(Hough_Planes);
+
+
+
+    //***Aglutinando (Merge) nos planos que são praticamente coplanares (inicialmente só utilizamos merge para planos que possuem o mesmo theta e o mesmo phi)***
+    //***Assim, o merge foi aplicado para planos que estavam muito próximos entre si***
+
+    //Chamando o método recursivo que aglutina os planos aproximadamente coplanares
+    vector<vector<double>> Merged_Planes = MergePlanes(Hough_Planes);
+
+
+    cout << "Após o merge, existem " << Merged_Planes.size() << " planos." << endl << endl;
+
+
+//    //Escrevendo os planos aglutinados em um arquivo (para plot no Matlab);
+    WriteMergedPlanesToFile(Merged_Planes);
+
+
+
+    //***Agrupando os planos restantes por seu Theta e Phi***
+    //***Conferir se desse modo, o Rho poderia ser identificado como a largura do degrau***
+    vector<vector<vector<double>>> Grouped_Planes = GroupPlanesByThetaPhi(Merged_Planes);
+
+
+
+    //***Utilizando um histograma como um "Filtro" e para identificar a distância entre planos que mais ocorre***
+    //***Foi inserido um filtro nesse histograma para só pontuar distâncias que estejam dentro do padrão de escadas***
+    vector<vector<vector<double>>> Histogram_Grouped_Planes = GenerateHistogram(Grouped_Planes);
+
+
+    //***Para cada grupo, verifica se existe uma sequência de 3 planos que estejam com distâncias dentro dos limites encontrados no histograma***
+    vector<vector<vector<double>>> Sequenced_Grouped_Planes = FilterGroups(Histogram_Grouped_Planes);
+
+
+
+    //***Estruturando uma escada para cada grupo de planos ainda existente***
+    //***Dado que buscamos os planos verticais da escada, cada plano deveria nos retornar um degrau***
+    //Obtendo os candidatos à escada
+    vector<Stair*> StairCandidatesDetected = StairCandidatesDetection(Sequenced_Grouped_Planes);
+
+
+    //Identificando cada degrau de cada escada
+    for(int i=0; i<StairCandidatesDetected.size(); i++)
+    {
+        Stair* stair = StairCandidatesDetected.at(i);
+
+        for(int j=0; j<stair->Steps.size(); j++)
+        {
+            Step* step = stair->Steps.at(j);
+
+            //Separando as folhas desse degrau em colunas (Mesmo x e y)
+            vector<vector<OcTree::leaf_bbx_iterator>> LeafGroups;
+
+            for(int k=0; k<step->Leafs_In_Step.size(); k++)
+            {
+                OcTree::leaf_bbx_iterator leaf = step->Leafs_In_Step.at(k);
+
+                bool leaf_group_found = false;
+
+                //Verificando se o X,Y já está em algum grupo
+                for(int l=0; l<LeafGroups.size(); l++)
+                {
+                    vector<OcTree::leaf_bbx_iterator> leaf_group = LeafGroups.at(l);
+                    if((leaf.getX() == leaf_group.at(0).getX()) && (leaf.getY() == leaf_group.at(0).getY()))
+                    {
+                        //Se encontrou um grupo, insere a folha nesse grupo;
+                        LeafGroups.at(l).push_back(leaf);
+
+                        leaf_group_found = true;
+                        break;
+                    }
+                }
+
+                //Se não encontrou um grupo, insere um novo grupo
+                if(leaf_group_found == false)
+                {
+                    vector<OcTree::leaf_bbx_iterator> NewLeafGroup;
+                    NewLeafGroup.push_back(leaf);
+
+                    LeafGroups.push_back(NewLeafGroup);
+                }
+
+            }
+
+
+            //Após agrupar, obtém as colunas com alturas dentro do padrão de degrau
+            vector<vector<OcTree::leaf_bbx_iterator>> FilteredLeafGroups;
+
+            for(int m=0; m<LeafGroups.size(); m++)
+            {
+                double min_leaf_group_z = 100.0;
+                double max_leaf_group_z = 0.0;
+
+                double leaf_group_height = 0.0;
+
+                vector<OcTree::leaf_bbx_iterator> LeafGroup = LeafGroups.at(m);
+                for(int n=0; n<LeafGroup.size(); n++)
+                {
+                    OcTree::leaf_bbx_iterator leaf = LeafGroup.at(n);
+                    if(leaf.getZ() < min_leaf_group_z)
+                    {
+                        min_leaf_group_z = leaf.getZ();
+                    }
+                    if(leaf.getZ() > max_leaf_group_z)
+                    {
+                        max_leaf_group_z = leaf.getZ();
+                    }
+                }
+
+                leaf_group_height = (max_leaf_group_z - min_leaf_group_z);
+
+                if((leaf_group_height >= Min_Step_Height) && (leaf_group_height <= Max_Step_Height))
+                {
+                    FilteredLeafGroups.push_back(LeafGroup);
+                }
+
+            }
+
+
+            //Repopulando as folhas do degrau (somente com as colunas que passaram pelo filtro)
+            step->Leafs_In_Step.clear();
+
+            for(int o=0; o<FilteredLeafGroups.size(); o++)
+            {
+                for(int p=0; p<FilteredLeafGroups.at(o).size(); p++)
+                {
+                    OcTree::leaf_bbx_iterator leaf = FilteredLeafGroups.at(o).at(p);
+
+                    step->Leafs_In_Step.push_back(leaf);
+
+                }
+
+            }
+
+        }
+
+    }
+
+
+
+    //***Novo histograma para filtrar colunas muito altas e muito baixas em cada degrau
+    //Os degraus que não tiverem uma sequência de níveis em z com um número mínimo de votos não serão mais considerados degraus válidos (não terão mais folhas)
+    for(int i=0; i<StairCandidatesDetected.size(); i++)
+    {
+        Stair* stair = StairCandidatesDetected.at(i);
+
+        cout << "Stair: " << i << endl;
+
+        for(int j=0;j<stair->Steps.size();j++)
+        {
+            Step* step = stair->Steps.at(j);
+
+            //Aplicando o filtro de histograma para o degrau
+            StepHistogram(step);
+
+            cout << "\t- Step " << j << ": " << endl;
+            cout << "\t\t- Leafs: " << stair->Steps.at(j)->Leafs_In_Step.size() << ";" << endl;
+            cout << "\t\t- Plane Rho: " << stair->Steps.at(j)->Step_Plane.at(0) << ";" << endl;
+            cout << "\t\t- Plane Theta: " << stair->Steps.at(j)->Step_Plane.at(1) << ";" << endl;
+            cout << "\t\t- Plane Phi: " << stair->Steps.at(j)->Step_Plane.at(2) << ";" << endl;
+            cout << endl;
+        }
+
+    }
+
+
+    //Escrevendo as informacões das escadas em um arquivo (para plot no Matlab)
+    WriteStairToFile(StairCandidatesDetected.at(7));
+
+
+
+
+
+    //Para cada escada, retira os degraus que não são válidos. Se o candidato à escada não possuir mais do que 3 degraus válidos, ele não será mais um candidato.
+    vector<Stair*> NewStairCandidates;
+
+    for(int i=0; i<StairCandidatesDetected.size(); i++)
+    {
+        Stair* stair = StairCandidatesDetected.at(i);
+
+        vector<Step*> NewSteps;
+        NewSteps.clear();
+
+        for(int j=0; j<stair->Steps.size(); j++)
+        {
+            Step* step = stair->Steps.at(j);
+
+            //Verifica se o degrau possui folhas (se não tiver, não é um degrau válido)
+            if(step->Leafs_In_Step.size() > 0)
+            {
+                NewSteps.push_back(step);
+            }
+        }
+
+        //Se a quantidade de degraus válidos for o suficiente para formar uma escada, essa escada ainda é uma candidata
+        if(NewSteps.size() > Min_Num_Steps)
+        {
+            stair->Steps = NewSteps;
+            stair->Num_Steps = NewSteps.size();
+
+            NewStairCandidates.push_back(stair);
+        }
+
+    }
+
+    //Atualizando os candidatos à escada
+    StairCandidatesDetected = NewStairCandidates;
+
+
+    //***Modelando cada candidato à escada (obtendo o comprimento, largura e altura média dos degraus, e a aresta inicial)
+    for(int i=0; i<StairCandidatesDetected.size(); i++)
+    {
+        Stair* stair = StairCandidatesDetected.at(i);
+
+        //Passando para a escada todos as folhas presentes nos seus degraus e calculando os X, Y e Z mínimos e máximos
+        stair->ExtractLeafsFromSteps();
+        stair->CalculateStairProperties();
+
+
+        //Ordenando os degraus da escada de acordo com a posicão Z de cada degrau, em ordem crescente
+        stair->SortSteps();
+
+
+        //***Obtendo a altura da escada e a altura media dos degraus dessa escada (O candidato com 4 degraus - o primeiro degrau não passou pelos filtros - está gerando uma altura errada)
+        stair->Total_Height = ((stair->Max_Z + Octree_Resolution/2) - (stair->Min_Z - Octree_Resolution/2));
+        stair->Step_Height = (stair->Total_Height)/stair->Num_Steps;
+
+
+        //***Obtendo a largura (aproximada) da escada e e a largura média de cada degrau
+        //***Obter o centróide do primeiro degrau (estará muito próximo da face mais externa) e calcular a distância até o plano do último degrau (estará próximo ao final)
+
+        //Calulando o centróide do primeiro degrau
+        vector<double> First_Step_Centroid;
+        First_Step_Centroid.clear();
+
+        double X_Sum = 0.0;
+        double Y_Sum = 0.0;
+        double Z_Sum = 0.0;
+
+        //O primeiro degrau será o que está na posicão mais baixa (já está ordenado)
+        Step* First_Step = stair->Steps.at(0);
+
+        for(int j=0; j<First_Step->Leafs_In_Step.size(); j++)
+        {
+            X_Sum = X_Sum + First_Step->Leafs_In_Step.at(j).getX();
+            Y_Sum = Y_Sum + First_Step->Leafs_In_Step.at(j).getY();
+            Z_Sum = Z_Sum + First_Step->Leafs_In_Step.at(j).getZ();
+        }
+
+        First_Step_Centroid.push_back((X_Sum)/First_Step->Leafs_In_Step.size());
+        First_Step_Centroid.push_back((Y_Sum)/First_Step->Leafs_In_Step.size());
+        First_Step_Centroid.push_back((Z_Sum)/First_Step->Leafs_In_Step.size());
+
+        //Obtendo a distância do centróide até o plano do último degrau
+        Step* Last_Step = stair->Steps.back();
+        vector<double> Last_Plane_Param = Last_Step->Step_Plane;
+
+        double rho = Last_Plane_Param.at(0);
+        double theta = Last_Plane_Param.at(1) * (M_PI/180);
+        double phi = Last_Plane_Param.at(2) * (M_PI/180);
+
+        //Definindo a normal do plano do último degrau
+        double n[3];
+        n[0] = cos(theta)*sin(phi);
+        n[1] = sin(theta)*sin(phi);
+        n[2] = cos(phi);
+
+
+        double rho_point = First_Step_Centroid.at(0) * n[0] + First_Step_Centroid.at(1) * n[1] + First_Step_Centroid.at(2) * n[2];
+
+        stair->Total_Width = abs(rho_point - rho);
+        stair->Step_Width = (stair->Total_Width)/(stair->Num_Steps - 1);
+
+
+        //Obtendo o par de pontos (1 do 1o degrau e 1 do último degrau) que possuem a maior distância entre si
+        //Essa distância será considerada a diagonal total da escada. Projetar os pontos no z=0. Projetar um dos dois pontos para o plano do outro (paralelo ao plano encontrado)
+        //A distância resultante será o comprimento da escada
+
+//        for(int i=0; i<First_Step->Leafs_In_Step.size(); i++)
+//        {
+//            for(int j=0; j<Last_Step->Leafs_In_Step.size(); j++)
+//            {
+
+//            }
+//        }
+
+
+    }
+
+
+
+
+    //Fim da marcacao de tempo de execucao
+    t_end = time(0);
+    time_t tempo = t_end - t_begin;
+
+    cout << "Demorou " << tempo << " segundos." << endl << endl;
 
 
 }
 
 
 //Os dados dos centróides serão obtidos diretamente do vetor de folhas
-void diane_octomap::DianeOctomap::PlanesHoughTransform(double length, double width, double height)
+vector<vector<double>> diane_octomap::DianeOctomap::PlanesHoughTransform(double length, double width, double height)
 {
     cout << "Funcão PlanesHoughTransform inicializada." << endl << endl;
 
-    time_t t_begin, t_end;
-
-    t_begin = time(0);
-
     //Definindo o Rho, Theta e Phi mínimos e máximos (dado que só estamos querendo detectar planos verticais, estabelecemos um phi mínimo e um máximo para reduzir o processamento)
     Rho_Min = 0;
-    Rho_Max = round(sqrt(pow(length, 2) + pow(width, 2) + pow(height, 2)));
+    Rho_Max = ceil(sqrt(pow(length, 2) + pow(width, 2) + pow(height, 2)));
     Theta_Min = 0;
     Theta_Max = 360;
     Phi_Min = 70;
@@ -217,7 +524,6 @@ void diane_octomap::DianeOctomap::PlanesHoughTransform(double length, double wid
     Theta_Passo = 5;
     Phi_Passo = 5;
 
-    Max_Distance = 0.1;
 
     Rho_Num = (Rho_Max - Rho_Min)/Rho_Passo;
     Theta_Num = (Theta_Max - Theta_Min)/Theta_Passo;
@@ -241,23 +547,24 @@ void diane_octomap::DianeOctomap::PlanesHoughTransform(double length, double wid
 
     cout << endl << "Votacão finalizada" << endl;
 
-    t_end = time(0);
-    time_t tempo = t_end - t_begin;
+
+    //Printando o estado do acumulador
+//    PrintAccumulator();
 
 
     //Obtendo os planos que passaram pelo filtro
-    vector<vector<double>> Filtered_Planes = getFilteredPlanes();
+    vector<vector<double>> Filtered_Planes = GetFilteredPlanes();
 
 
-
-    //Printando o resultado do acumulador
-    PrintAccumulator();
+    cout << "Existem " << Filtered_Planes.size() << " planos filtrados." << endl << endl;
 
 
-    cout << "Demorou " << tempo << " segundos." << endl;
+    cout << "Funcão PlanesHoughTransform finalizada." << endl;
 
 
-    cout << endl << "Funcão PlanesHoughTransform finalizada." << endl;
+    return Filtered_Planes;
+
+
 }
 
 
@@ -325,7 +632,7 @@ void diane_octomap::DianeOctomap::AccumulatePoint(OcTree::leaf_bbx_iterator leaf
                 double point_rho = leaf_point.getX() * n[0] + leaf_point.getY() * n[1] + leaf_point.getZ() * n[2];
 
                 //Se a distância entre os dois planos, que possuem a mesma angulacão theta e phi, estiver dentro da tolerância, o ponto vota nessa célula
-                if (fabs(point_rho - rho) < Max_Distance)
+                if (fabs(point_rho - rho) < Max_Planes_Distance)
                 {
                     ((Accumulator.at(k)).at(j)).at(i) = ((Accumulator.at(k)).at(j)).at(i) + 1;
                 }
@@ -339,7 +646,7 @@ void diane_octomap::DianeOctomap::AccumulatePoint(OcTree::leaf_bbx_iterator leaf
 }
 
 
-vector<vector<double>> diane_octomap::DianeOctomap::getFilteredPlanes()
+vector<vector<double>> diane_octomap::DianeOctomap::GetFilteredPlanes()
 {
     //Armazenando no vetor as coordenadas polares do centróide da célula
     vector<vector<double>> Filtered_Planes;
@@ -350,7 +657,7 @@ vector<vector<double>> diane_octomap::DianeOctomap::getFilteredPlanes()
     {
         double phi = (Phi_Min + (i+0.5)*Phi_Passo);
 
-        if ((phi>= Filter_Phi_Min) && (phi>= Filter_Phi_Max))
+        if ((phi>= Filter_Phi_Min) && (phi<= Filter_Phi_Max))
         {
             for(unsigned int j = 0; j<Theta_Num; j++)
             {
@@ -362,13 +669,14 @@ vector<vector<double>> diane_octomap::DianeOctomap::getFilteredPlanes()
 
                     double votes = ((Accumulator.at(k)).at(j)).at(i);
 
-                    if ((votes > Filter_Vote_Min) && (votes < Filter_Vote_Max))
+                    if ((votes >= Filter_Vote_Min) && (votes <= Filter_Vote_Max))
                     {
                         //Inclui no vetor filtrado
                         vector<double> valid_plane;
                         valid_plane.push_back(rho);
                         valid_plane.push_back(theta);
                         valid_plane.push_back(phi);
+                        valid_plane.push_back(votes);
 
                         Filtered_Planes.push_back(valid_plane);
                         count++;
@@ -389,29 +697,513 @@ vector<vector<double>> diane_octomap::DianeOctomap::getFilteredPlanes()
 }
 
 
-void diane_octomap::DianeOctomap::MergePlanes(vector<vector<double>> Planes)
+vector<vector<double>> diane_octomap::DianeOctomap::MergePlanes(vector<vector<double>> Planes)
 {
-    //Método referente ao Merge dos Planos filtrados
+    //Input:
+    //Planes é o vector com todos os vetores referentes aos Planos a serem verificados para aglutinacão.
+    //Cada vector em Planes contém: RHO, THETA, PHI e Votos nesse plano
 
+    //Output:
+    //Merged_Planes é o vector resultado com todos os vetores de Planos após serem aglutinados.
+
+    vector<vector<double>> Merged_Planes;
+
+    vector<double> NewPlane;
+
+    int i = 0, j = 0;
+
+
+    bool merge_break = false;
+
+//    cout << "Tamanho de Planes: " << Planes.size() << "." << endl;
+
+    if(Planes.size() > 0)
+    {
+        //Para cada plano, verifica se cada um dos planos seguintes podem ser agrupados com o inicial
+        for(i=0; i<Planes.size(); i++)
+        {
+            for(j=i+1; j<Planes.size(); j++)
+            {
+                if(CanMergePlanes(Planes.at(i), Planes.at(j)))
+                {
+                    //Se dois planos forem marcados como mergeable, executa o MergePlanes repassando o novo Planes (com o novo Plane e sem os dois antigos)
+                    NewPlane = FitPlane(Planes.at(i), Planes.at(j));
+                    merge_break = true;
+                    break;
+                }
+
+            }
+
+            if (merge_break == true)
+            {
+                break;
+            }
+
+        }
+
+    }
+
+    //Se ocorreu um merge_break, gera um novo conjunto de Planes (com o novo Plane e sem os dois antigos) e chama o MergePlanes
+    if(merge_break)
+    {
+        vector<vector<double>> temp_Planes;
+
+        temp_Planes.push_back(NewPlane);
+
+        //Copiando os planos antigos para o novo vetor
+        for(int ii=0; ii<i; ii++)
+        {
+            temp_Planes.push_back(Planes.at(ii));
+        }
+        for(int jj = i+1; jj<j; jj++)
+        {
+            temp_Planes.push_back(Planes.at(jj));
+        }
+        for(int kk = j+1; kk<Planes.size(); kk++)
+        {
+            temp_Planes.push_back(Planes.at(kk));
+        }
+
+//        cout << "Tamanho de temp_Planes: " << temp_Planes.size() << "." << endl;
+
+        //Recursão para obter somente os planos aglutinados finais
+        Merged_Planes = MergePlanes(temp_Planes);
+
+    }
+    else
+    {
+        //Se não existirem mais planos a serem aglutinados, retorna o vector que foi recebido
+        Merged_Planes = Planes;
+    }
+
+    return Merged_Planes;
+
+}
+
+
+bool diane_octomap::DianeOctomap::CanMergePlanes(vector<double> PlaneA, vector<double> PlaneB)
+{
+    //Input:
+    //PlaneA é o vector com informacões do primeiro plano sendo analisado, contendo RHO, THETA e PHI.
+    //PlaneB é o vector com informacões do segundo plano sendo analisado, contendo RHO, THETA e PHI.
+
+    //Output:
+    //Bool Result indicando se os dois planos podem ser aglutinados ou não
+
+    //delta_Rho é a tolerância em Rho para a aglutinacão entre os planos.
+    //delta_Theta é a tolerância em Theta para a aglutinacão entre os planos.
+    //delta_Phi é a tolerância em Phi para a aglutinacão entre os planos.
+
+
+    bool Result = false;
+
+    double RhoA = PlaneA.at(0);
+    double RhoB = PlaneB.at(0);
+    double ThetaA = PlaneA.at(1);
+    double ThetaB = PlaneB.at(1);
+    double PhiA = PlaneA.at(2);
+    double PhiB = PlaneB.at(2);
+
+    if ((abs(RhoA - RhoB) <= delta_Rho) && (abs(ThetaA - ThetaB) <= delta_Theta) && (abs(PhiA - PhiB) <= delta_Phi))
+    {
+        //Seria bom adicionar algum outro filtro fora os limites? Não tenho a informacão dos pontos presentes no plano
+        Result = true;
+    }
+
+    return Result;
+
+}
+
+
+vector<double> diane_octomap::DianeOctomap::FitPlane(vector<double> PlaneA, vector<double> PlaneB)
+{
+    //Inicialmente, o plano resultante possuirá parâmetros RHO, THETA e PHI iguais às médias ponderadas dos parâmetros dos planos recebidos, onde o peso é a quantidade de votos.
+
+    vector<double> Result_Plane;
+
+    double Rho = ((PlaneA.at(0)*PlaneA.at(3) + PlaneB.at(0)*PlaneB.at(3))/(PlaneA.at(3) + PlaneB.at(3)));
+    double Theta = ((PlaneA.at(1)*PlaneA.at(3) + PlaneB.at(1)*PlaneB.at(3))/(PlaneA.at(3) + PlaneB.at(3)));
+    double Phi = ((PlaneA.at(2)*PlaneA.at(3) + PlaneB.at(2)*PlaneB.at(3))/(PlaneA.at(3) + PlaneB.at(3)));
+    double Votes = (PlaneA.at(3) + PlaneB.at(3));
+
+
+
+    Result_Plane.push_back(Rho);
+    Result_Plane.push_back(Theta);
+    Result_Plane.push_back(Phi);
+    Result_Plane.push_back(Votes);
+
+
+    return Result_Plane;
+}
+
+
+//Separando os planos em grupos de par (Theta, Phi)
+vector<vector<vector<double>>> diane_octomap::DianeOctomap::GroupPlanesByThetaPhi(vector<vector<double>> Planes)
+{
+    vector<vector<vector<double>>> GroupedPlanes;
+
+    //Separando os planos por seus ângulos Theta e Phi
+    for(int i=0; i<Planes.size(); i++)
+    {
+        vector<double> Plane = Planes.at(i);
+
+        double theta = Plane.at(1);
+        double phi = Plane.at(2);
+
+        bool Group_Found = false;
+
+        //Verificando se os ângulos do Plano já fazem parte de um grupo
+        for(int j=0; j<GroupedPlanes.size(); j++)
+        {
+            if((theta == ((GroupedPlanes.at(j)).at(0)).at(1)) && (phi == ((GroupedPlanes.at(j)).at(0)).at(2)))
+            {
+                GroupedPlanes.at(j).push_back(Plane);
+                Group_Found = true;
+                break;
+            }
+
+        }
+
+        if(Group_Found == false)
+        {
+            //Se o grupo não foi encontrado, cria um novo grupo
+            vector<vector<double>> NewGroupPlanes;
+            NewGroupPlanes.push_back(Plane);
+
+            GroupedPlanes.push_back(NewGroupPlanes);
+        }
+
+    }
+
+    return GroupedPlanes;
+
+}
+
+
+vector<vector<vector<double>>> diane_octomap::DianeOctomap::GenerateHistogram(vector<vector<vector<double>>> Grouped_Planes)
+{
+    //Montagem do histograma de frequência de distância entre os planos em um grupo
+    double Hist_Passo = 0.025;
+    int Hist_Length = ceil((Rho_Max - Rho_Min))/Hist_Passo; //Quantidade de intervalos do histograma
+    vector<int> Histogram(Hist_Length, 0);
+
+    map<vector<vector<double>>, double> Planes_Dist_Map;
+
+    //Para cada grupo de planos (theta e phi fixos), verifica as distâncias entre os planos e pontua no histograma
+    for(int k=0; k<Grouped_Planes.size(); k++)
+    {
+        if((Grouped_Planes.at(k)).size() >= Min_Num_Steps)
+        {
+            for(int l=0; l<(Grouped_Planes.at(k)).size() - 1; l++)
+            {
+                vector<double> PlaneA = (Grouped_Planes.at(k)).at(l);
+                vector<double> PlaneB;
+
+                for(int m=l+1; m<(Grouped_Planes.at(k)).size(); m++)
+                {
+                    PlaneB = (Grouped_Planes.at(k)).at(m);
+
+                    double Dist = abs(PlaneA.at(0) - PlaneB.at(0));
+
+                    //Só pontua se a distância estiver dentro do padrão de degrau
+                    if((Dist > Min_Step_Width) && (Dist < Max_Step_Width))
+                    {
+                        //Adicionando um ponto para o intervalo do histograma.
+                        int index = floor(Dist/Hist_Passo);
+
+                        Histogram.at(index) = Histogram.at(index) + 1;
+
+                        //Adicionar em alguma estrutura os dois planos que geraram essa distância
+                        vector<vector<double>> Planes_Key;
+                        Planes_Key.push_back(PlaneA);
+                        Planes_Key.push_back(PlaneB);
+
+                        Planes_Dist_Map.insert(pair< vector<vector<double>>, double>(Planes_Key, Dist));
+
+                    }
+
+                }
+
+            }
+
+        }
+
+    }
+
+    int max_freq = 0;
+    int max_index = 0;
+    for (int n=0; n<Hist_Length; n++)
+    {
+        if (Histogram.at(n) > max_freq)
+        {
+            max_freq = Histogram.at(n);
+            max_index = n;
+        }
+    }
+
+    //Obtendo o intervalo de distância tolerado para selecionar os planos
+    Histogram_Dist_Min = (max_index - 1) * Hist_Passo;
+    Histogram_Dist_Max = (max_index + 2) * Hist_Passo;
+
+
+    cout << "Maior pontuacão do histograma: " << max_freq << "." << endl << endl;
+    cout << "Índice da maior pontuacão do histograma: " << max_index << "." << endl << endl;
+
+    cout << "Distância mínima: " << Histogram_Dist_Min << "." << endl << endl;
+    cout << "Distância máxima: " << Histogram_Dist_Max << "." << endl << endl;
+
+
+    //Extraindo do map os planos que fazem parte de um par de planos com distância tolerada
+    return ExtractValidPlanes(Planes_Dist_Map);
+
+}
+
+
+vector<vector<vector<double>>> diane_octomap::DianeOctomap::ExtractValidPlanes(map<vector<vector<double>>, double> Planes_Dist_Map)
+{
+    //Verificando se o par de planos possuem uma distância dentro da tolerância
+    vector<vector<double>> Valid_Planes;
+
+    vector<vector<vector<double>>> Grouped_Valid_Planes;
+
+
+    for(map<vector<vector<double>>, double>::iterator it=Planes_Dist_Map.begin(); it!=Planes_Dist_Map.end(); it++)
+    {
+        if((it->second >= Histogram_Dist_Min) && (it->second <= Histogram_Dist_Max))
+        {
+            vector<vector<double>> Plane_Pair = it->first;
+
+            //Inserindo em Valid_Planes o 1o plano se já não existir
+            if(!(find(Valid_Planes.begin(), Valid_Planes.end(), Plane_Pair.at(0)) != Valid_Planes.end()))
+            {
+                Valid_Planes.push_back(Plane_Pair.at(0));
+            }
+
+            //Inserindo em Valid_Planes o 2o plano se já não existir
+            if(!(find(Valid_Planes.begin(), Valid_Planes.end(), Plane_Pair.at(1)) != Valid_Planes.end()))
+            {
+                Valid_Planes.push_back(Plane_Pair.at(1));
+            }
+
+        }
+
+    }
+
+    cout << "Existem " << Valid_Planes.size() << " planos válidos." << endl << endl;
+
+
+    //Agrupando novamente por Theta e Phi
+    Grouped_Valid_Planes = GroupPlanesByThetaPhi(Valid_Planes);
+
+
+    cout << "Existem " << Grouped_Valid_Planes.size() << " grupos de planos válidos." << endl << endl;
+
+
+    return Grouped_Valid_Planes;
+
+}
+
+
+vector<vector<vector<double>>> diane_octomap::DianeOctomap::FilterGroups(vector<vector<vector<double>>> Groups_Planes)
+{
+    vector<vector<vector<double>>> Sequenced_Groups;
+
+    //Filtrando os grupos de planos (se ele não possuir uma sequência, o grupo inteiro é removido)
+    for(int i=0; i<Groups_Planes.size(); i++)
+    {
+        vector<vector<double>> Group = Groups_Planes.at(i);
+
+        if(VerifySequence(Group))
+        {
+            Sequenced_Groups.push_back(Group);
+        }
+
+    }
+
+    return Sequenced_Groups;
+}
+
+
+bool diane_octomap::DianeOctomap::VerifySequence(vector<vector<double>> Group_Planes)
+{
+    vector<double> Rhos;
+
+    for(int j=0; j<Group_Planes.size(); j++)
+    {
+        Rhos.push_back((Group_Planes.at(j)).at(0));
+    }
+
+
+    sort(Rhos.begin(), Rhos.end());
+
+    for(int k=0; k<Rhos.size()-2; k++)
+    {
+        for(int l=k+1; l<Rhos.size()-1; l++)
+        {
+
+            for(int m=l+1; m<Rhos.size(); m++)
+            {
+                double dist1 = fabs(Rhos.at(k) - Rhos.at(l));
+                double dist2 = fabs(Rhos.at(l) - Rhos.at(m));
+
+                if(((dist1 >= Histogram_Dist_Min) && (dist1 <= Histogram_Dist_Max)) && ((dist2 >= Histogram_Dist_Min) && (dist2 <= Histogram_Dist_Max)) )
+                {
+                    return true;
+                }
+
+            }
+
+        }
+
+    }
+
+    //Se não encontrou uma sequencia, retorna false
+    return false;
+
+}
+
+
+vector<diane_octomap::Stair*> diane_octomap::DianeOctomap::StairCandidatesDetection(vector<vector<vector<double>>> Grouped_Planes)
+{
+    vector<Stair*> StairCandidatesDetected;
+
+    //Obtendo os candidatos à escada
+    for(int i=0; i<Grouped_Planes.size(); i++)
+    {
+        //Se no grupo de planos existirem planos suficientes para detectar uma escada, obtém a candidata da escada
+        if(Grouped_Planes.at(i).size() >= Min_Num_Steps)
+        {
+            Stair* NewStairCandidate = ObtainStairCandidateFromGroup(Grouped_Planes.at(i));
+
+            if((NewStairCandidate->Steps.size() != 0))
+            {
+                StairCandidatesDetected.push_back(NewStairCandidate);
+
+            }
+
+        }
+
+    }
+
+    return StairCandidatesDetected;
+
+}
+
+
+
+diane_octomap::Stair* diane_octomap::DianeOctomap::ObtainStairCandidateFromGroup(vector<vector<double>> Group_Planes)
+{
+    Stair* StairCandidate = new Stair();
+
+    //Para cada plano do grupo, armazena os pontos que fazem parte/estão à uma distância tolerável deste plano
+    for(int i=0; i<Group_Planes.size(); i++)
+    {
+        Step* NewStep = new Step();
+
+        vector<double> Plane = Group_Planes.at(i);
+        double rho = Plane.at(0);
+        double theta = Plane.at(1) * (M_PI/180);
+        double phi = Plane.at(2) * (M_PI/180);
+
+        //Definindo a normal do plano
+        double n[3];
+        n[0] = cos(theta)*sin(phi);
+        n[1] = sin(theta)*sin(phi);
+        n[2] = cos(phi);
+
+        NewStep->Step_Plane = Plane;
+
+        //Para cada folha, verifica se a centróide está próxima do plano
+        for(int j=0; j<OccupiedLeafsInBBX.size(); j++)
+        {
+            OcTree::leaf_bbx_iterator leaf = OccupiedLeafsInBBX.at(j);
+
+            //Calculando o Rho do plano que passa no ponto sendo avaliado com o Theta e o Phi do plano avaliado;
+            double point_rho = leaf.getX() * n[0] + leaf.getY() * n[1] + leaf.getZ() * n[2];
+
+            //Se a distância entre os dois planos, que possuem a mesma angulacão theta e phi, estiver dentro da tolerância, o ponto vota nessa célula
+            if (fabs(point_rho - rho) < Max_Planes_Distance)
+            {
+                NewStep->Leafs_In_Step.push_back(leaf);
+            }
+
+        }
+
+        //Inserindo o Degrau referente ao plano no candidato à escada
+        StairCandidate->Steps.push_back(NewStep);
+
+    }
+
+    return StairCandidate;
+
+}
+
+
+void diane_octomap::DianeOctomap::StepHistogram(Step* step)
+{
+    int Hist_Length = 4/0.05;
+    vector<int> stepHistogram(Hist_Length, 0);
+    vector<int> index_vote;
+
+    for(int i=0; i<step->Leafs_In_Step.size(); i++)
+    {
+        double leafZ = step->Leafs_In_Step.at(i).getZ();
+        int index = leafZ/0.05;
+        stepHistogram[index] = stepHistogram[index] + 1;
+    }
+
+    for(int i=0; i<stepHistogram.size(); i++)
+    {
+        if (stepHistogram[i]>=20)
+        {
+            index_vote.push_back(i);
+        }
+    }
+
+    bool sequence_found = false;
+
+    if (index_vote.size() > 3)
+    {
+        for(int i=0; i<index_vote.size() - 3; i++)
+        {
+            if ((index_vote[i]==index_vote[i+1]-1) && (index_vote[i]==index_vote[i+2]-2) && (index_vote[i]==index_vote[i+3]-3))
+            {
+                sequence_found = true;
+                double minZ = index_vote[i]*0.05;
+                double maxZ = (index_vote[i+3] + 1)*0.05;
+
+                vector <OcTree::leaf_bbx_iterator> newLeaf;
+
+                for (int j=0;j<step->Leafs_In_Step.size();j++)
+                {
+                    if((step->Leafs_In_Step.at(j).getZ()>minZ) && (step->Leafs_In_Step.at(j).getZ()<maxZ))
+                    {
+                        newLeaf.push_back(step->Leafs_In_Step.at(j));
+                    }
+                }
+                step->Leafs_In_Step = newLeaf;
+                break;;
+            }
+        }
+    }
+
+    if (sequence_found==false)
+    {
+        step->Leafs_In_Step.clear();
+    }
 
 }
 
 
 void diane_octomap::DianeOctomap::PrintAccumulator()
 {
-    ofstream myfile("/home/derekchan/output.txt");
-
-    myfile << "[";
-
     int count = 0;
 
     for(unsigned int i = 0; i<Phi_Num; i++)
     {
         double phi1 = (Phi_Min + (i)*Phi_Passo);
         double phi2 = (Phi_Min + (i+1)*Phi_Passo);
-
-        double phi = (Phi_Min + (i+0.5)*Phi_Passo);
-
 
         if ((phi1 >= Filter_Phi_Min) && (phi2 <= Filter_Phi_Max))
         {
@@ -420,16 +1212,10 @@ void diane_octomap::DianeOctomap::PrintAccumulator()
                 double theta1 = (Theta_Min + (j)*Theta_Passo);
                 double theta2 = (Theta_Min + (j+1)*Theta_Passo);
 
-                double theta = (Theta_Min + (j+0.5)*Theta_Passo);
-
-
                 for(unsigned int k = 0; k<Rho_Num; k++)
                 {
                     double rho1 = (Rho_Min + (k)*Rho_Passo);
                     double rho2 = (Rho_Min + (k+1)*Rho_Passo);
-
-                    double rho = (Rho_Min + (k+0.5)*Rho_Passo);
-
 
                     double votes = 0;
 
@@ -437,11 +1223,6 @@ void diane_octomap::DianeOctomap::PrintAccumulator()
 
                     if ((votes > Filter_Vote_Min) && (votes < Filter_Vote_Max))
                     {
-
-                        myfile << rho << " " << theta << " " << phi << ";";
-
-//                        myfile << "(rho1, rho2, theta1, theta2, phi1, phi2, Total Votes): (" << rho1 << ", " << rho2 << ", " << theta1 << ", " << theta2 << ", " << phi1 << ", " << phi2 << ", " << votes << ")" << endl;
-//                        myfile << endl;
 
                         cout << "(rho1, rho2, theta1, theta2, phi1, phi2, Total Votes): (" << rho1 << ", " << rho2 << ", " << theta1 << ", " << theta2 << ", " << phi1 << ", " << phi2 << ", " << votes << ")" << endl;
                         cout << endl;
@@ -454,69 +1235,229 @@ void diane_octomap::DianeOctomap::PrintAccumulator()
 
             }
 
-//            myfile << endl << endl;
             cout << endl << endl;
 
         }
 
     }
 
-    myfile << "]" << endl;
-    myfile.close();
-
-
-//    cout << "Iniciando print das células com votos ordenados" << endl;
-
-//    multiset<int*, diane_octomap::maxcompare>* sorted_list = getMax();
-
-//    multiset<int*, maxcompare>::iterator it = sorted_list->begin();
-//    int inferior_threshold = (1000);
-//    int superior_threshold = (15000);
-////    unsigned int stop = (int)(allPoints->size()/100.0)*myConfigFileHough.Get_MinSizeAllPoints();
-
-//    while((it != sorted_list->end()) && ((*it)[0] > inferior_threshold) && ((*it)[0] < superior_threshold))
-//    {
-//        double rho_value = ((*it)[1]) * Rho_Max/ Rho_Num;
-//        double theta_value = ((*it)[2] * 2*180) / Theta_Num;
-//        double phi_value = ((*it)[3] * 180) / (Phi_Num * 0.99999999);
-
-//        cout << "(Rho, Theta, Phi, Votos): " << "(" << rho_value << ", " << theta_value << ", " << phi_value << ", " << (*it)[0] << ")\n" << endl;
-//        it++;
-//    }
-
     cout << "Quantidade de planos encontrados: " << count << "." << endl;
 
-
 }
 
 
-
-multiset<int*, diane_octomap::maxcompare>* diane_octomap::DianeOctomap::getMax()
+void diane_octomap::DianeOctomap::WriteFilteredPlanesToFile(vector<vector<double>> Filtered_Planes)
 {
-    //Neste multiset, as listas referentes às células são ordenadas pelo struct maxcompare, ordenando pela quantidade de votos
-    multiset<int*, maxcompare>* maxlist = new multiset<int*, maxcompare>();
+    ofstream filteredfile("/home/derekchan/Dropbox/Projeto Final/Arquivos/filtered_planes.txt");
 
-    for(unsigned int i = 0; i < Rho_Num; i++)
+    filteredfile << "A = [";
+
+    for(int i=0; i<Filtered_Planes.size(); i++)
     {
-        for(unsigned int j = 0; j < Theta_Num; j++)
-        {
-            for(unsigned int k = 0; k < Phi_Num; k++)
-            {
-                int* temporary  = new int[4];
-                temporary[0] = ((Accumulator.at(i)).at(j)).at(k);
-                temporary[1] = i;
-                temporary[2] = j;
-                temporary[3] = k;
-                maxlist->insert(temporary);
-            }
-        }
+        vector<double> Filtered_Plane = Filtered_Planes.at(i);
+
+        filteredfile << Filtered_Plane.at(0) << " " << Filtered_Plane.at(1) << " " << Filtered_Plane.at(2) << ";";
     }
 
-    return maxlist;
+
+    filteredfile << "]" << endl;
+    filteredfile.close();
+
 }
+
+
+void diane_octomap::DianeOctomap::WriteMergedPlanesToFile(vector<vector<double>> Merged_Planes)
+{
+    ofstream mergedfile("/home/derekchan/Dropbox/Projeto Final/Arquivos/merged_planes.txt");
+
+    mergedfile << "A = [";
+
+    for(int i=0; i<Merged_Planes.size(); i++)
+    {
+        vector<double> Merged_Plane = Merged_Planes.at(i);
+
+        mergedfile << Merged_Plane.at(0) << " " << Merged_Plane.at(1) << " " << Merged_Plane.at(2) << ";";
+    }
+
+
+    mergedfile << "]" << endl;
+    mergedfile.close();
+
+}
+
+
+void diane_octomap::DianeOctomap::WriteStairToFile(diane_octomap::Stair* Stair)
+{
+    ofstream stairfile("/home/derekchan/Dropbox/Projeto Final/Arquivos/stair_candidate.txt");
+
+    stairfile << "A = [";
+
+    for(int i=0; i<Stair->Steps.size(); i++)
+    {
+        Step* step = Stair->Steps.at(i);
+
+        for(int j=0; j<step->Leafs_In_Step.size(); j++)
+        {
+            OcTree::leaf_bbx_iterator leaf = step->Leafs_In_Step.at(j);
+
+            stairfile << leaf.getX() << ", " << leaf.getY() << ", " << leaf.getZ() << ";";
+        }
+
+    }
+
+
+    stairfile << "];" << endl;
+    stairfile.close();
+
+
+}
+
 
 
 diane_octomap::DianeOctomap::~DianeOctomap()
 {
     StopInternalCycle();
 }
+
+
+
+///******Métodos da classe Step*******
+
+diane_octomap::Step::Step()
+{
+
+}
+
+
+void diane_octomap::Step::CalculateStepProperties()
+{
+    //Obtendo o menor Z e o maior Z das folhas contidas no degrau
+    for(int i=0; i<Leafs_In_Step.size(); i++)
+    {
+        OcTree::leaf_bbx_iterator leaf = Leafs_In_Step.at(i);
+
+        if(Step_Min_Z > leaf.getZ())
+        {
+            Step_Min_Z = leaf.getZ();
+        }
+        if(Step_Max_Z < leaf.getZ())
+        {
+            Step_Max_Z = leaf.getZ();
+        }
+    }
+
+    //Calculando o Z médio do degrau
+    Step_Mean_Z = (Step_Min_Z + Step_Max_Z)/2;
+
+}
+
+
+diane_octomap::Step::~Step()
+{
+
+}
+
+
+
+
+///******Métodos da classe Stair*******
+
+
+diane_octomap::Stair::Stair()
+{
+
+}
+
+
+void diane_octomap::Stair::SortSteps()
+{
+    vector<Step*> SortedSteps;
+
+    map<double, int> Mean_Index_Map;
+
+    //Ordenando os degraus em ordem crescente da média de Z
+    for(int i=0; i<Steps.size(); i++)
+    {
+        Mean_Index_Map.insert(pair<double, int>(Steps.at(i)->Step_Mean_Z, i));
+    }
+
+    for(map<double, int>::iterator itr = Mean_Index_Map.begin(); itr != Mean_Index_Map.end(); itr++)
+    {
+        //Adicionando o degrau no vetor ordenado
+        SortedSteps.push_back(Steps.at(itr->second));
+    }
+
+    Steps = SortedSteps;
+
+}
+
+
+void diane_octomap::Stair::ExtractLeafsFromSteps()
+{
+    for(int i=0; i<Steps.size(); i++)
+    {
+        Step* step = Steps.at(i);
+
+        //Calculando propriedades do degrau (Será utilizado na ordenacão)
+        step->CalculateStepProperties();
+
+        for(int j=0; j<step->Leafs_In_Step.size(); j++)
+        {
+            OcTree::leaf_bbx_iterator leaf = step->Leafs_In_Step.at(j);
+
+            //Verificando se a folha ja faz parte das folhas da escada. Se não fizer, atualiza as informacões da escada
+            if((find(Leafs_In_Stair.begin(), Leafs_In_Stair.end(), leaf) != Leafs_In_Stair.end()) == false)
+            {
+                Leafs_In_Stair.push_back(leaf);
+            }
+
+        }
+
+    }
+
+}
+
+
+void diane_octomap::Stair::CalculateStairProperties()
+{
+    for(int i=0; i<Leafs_In_Stair.size(); i++)
+    {
+        OcTree::leaf_bbx_iterator leaf = Leafs_In_Stair.at(i);
+
+        if(Min_X > leaf.getX())
+        {
+            Min_X = leaf.getX();
+        }
+        if(Max_X < leaf.getX())
+        {
+            Max_X = leaf.getX();
+        }
+
+        if(Min_Y > leaf.getY())
+        {
+            Min_Y = leaf.getY();
+        }
+        if(Max_Y < leaf.getY())
+        {
+            Max_Y = leaf.getY();
+        }
+
+        if(Min_Z > leaf.getZ())
+        {
+            Min_Z = leaf.getZ();
+        }
+        if(Max_Z < leaf.getZ())
+        {
+            Max_Z = leaf.getZ();
+        }
+
+    }
+
+}
+
+
+diane_octomap::Stair::~Stair()
+{
+
+}
+
