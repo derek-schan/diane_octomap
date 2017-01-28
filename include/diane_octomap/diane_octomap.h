@@ -42,15 +42,28 @@ public:
     double Step_Width;
     double Step_Height;
 
-    double Step_Min_Z = 1000;
-    double Step_Max_Z = -1000;
-    double Step_Mean_Z = 0;
+    double Step_Min_Z;
+    double Step_Max_Z;
+    double Step_Mean_Z;
 
     vector<double> Step_Plane;
+
+    //Características padrões
+    double Min_Step_Height;
+    double Max_Step_Height;
+
 
     Step();
 
     void CalculateStepProperties();
+
+
+    //Filtrando as colunas de folhas que estão fora dos limites padrões de altura para degraus
+    void Step_Height_Filter();
+
+
+    void StepHeightHistogram();
+
 
     virtual ~Step();
 
@@ -71,21 +84,22 @@ public:
     double Total_Width;
     double Total_Height;
 
-    double Min_X = 1000;
-    double Max_X = -1000;
-    double Min_Y = 1000;
-    double Max_Y = -1000;
-    double Min_Z = 1000;
-    double Max_Z = -1000;
+    double Min_X;
+    double Max_X;
+    double Min_Y;
+    double Max_Y;
+    double Min_Z;
+    double Max_Z;
 
 
-    int Num_Steps = 0;
-    double Step_Length = 0;
-    double Step_Width = 0;
-    double Step_Height = 0;
+    int Num_Steps;
+    double Step_Length;
+    double Step_Width;
+    double Step_Height;
+
 
     //(Xi,Yi) e (Xf,Yf)
-    vector<double> Aresta;
+    vector<vector<double>> Aresta;
 
 
     Stair();
@@ -99,6 +113,9 @@ public:
 
     //Método obtendo os X, Y e Z mínimos e máximos da escada
     void CalculateStairProperties();
+
+
+    void ModelStair(double Octree_Resolution);
 
 
     virtual ~Stair();
@@ -168,26 +185,26 @@ protected:
     vector<vector<vector<int>>> Accumulator;
 
     //Variáveis para filtrar os planos a serem extraídos
-    double Filter_Phi_Min = 85;
-    double Filter_Phi_Max = 96;
-    double Filter_Vote_Min = 250;
-    double Filter_Vote_Max = 400;
+    double Filter_Phi_Min;
+    double Filter_Phi_Max;
+    double Filter_Vote_Min;
+    double Filter_Vote_Max;
 
     //Definindo as tolerâncias para o merge dos planos
-    double delta_Rho = 0.1;
-    double delta_Theta = 0;
-    double delta_Phi = 0;
+    double delta_Rho;
+    double delta_Theta;
+    double delta_Phi;
 
     //Definindo variáveis resultantes do histograma
     double Histogram_Dist_Min;
     double Histogram_Dist_Max;
 
     //Definindo características da escada
-    int Min_Num_Steps = 3;
-    double Min_Step_Width = 0.25;
-    double Max_Step_Width = 0.35;
-    double Min_Step_Height = 0.09;
-    double Max_Step_Height = 0.20;
+    int Min_Num_Steps;
+    double Min_Step_Width;
+    double Max_Step_Width;
+    double Min_Step_Height;
+    double Max_Step_Height;
 
 
 public:
@@ -221,6 +238,9 @@ public:
 
     //A identificacão da escada será sobre o vetor de folhas contidas dentro do Bounding Box
     void StairDetection();
+
+
+    vector<double> GetSpaceProperties();
 
 
     //Metodos para Transformada de Hough
@@ -277,8 +297,6 @@ public:
     Stair* ObtainStairCandidateFromGroup(vector<vector<double>> Group_Planes);
 
 
-    void StepHistogram(Step* step);
-
 
 
     //Métodos referentes à couts e à escrita em arquivos
@@ -291,7 +309,10 @@ public:
     void WriteMergedPlanesToFile(vector<vector<double>> Merged_Planes);
 
 
-    void WriteStairToFile(diane_octomap::Stair* Stair);
+    void WriteStairCandidateToFile(diane_octomap::Stair* Stair);
+
+
+    void WriteModeledStairPropertiesToFile(diane_octomap::Stair* Stair);
 
 
     virtual ~DianeOctomap();
