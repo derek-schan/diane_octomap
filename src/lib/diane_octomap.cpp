@@ -253,6 +253,7 @@ vector<vector<OcTree::leaf_bbx_iterator>> diane_octomap::DianeOctomap::GroupPlan
 
 }
 
+
 //Retorna a largura e o comprimento do mapa para contruçao do espaço de Hough
 vector<double> diane_octomap::DianeOctomap::getParameter(vector<OcTree::leaf_bbx_iterator> Leafs)
     {
@@ -287,7 +288,8 @@ vector<double> diane_octomap::DianeOctomap::getParameter(vector<OcTree::leaf_bbx
     result.push_back(width);
 
     return result;
-    }
+
+}
 
 
 //Cria as retas usando a transformada de Hough
@@ -317,7 +319,9 @@ vector<vector<diane_octomap::Line*>> diane_octomap::DianeOctomap::LineHoughTrans
 
         Group_Lines.push_back(Lines);
     }
+
     return Group_Lines;
+
 }
 
 
@@ -370,7 +374,9 @@ vector<vector<int>> diane_octomap::DianeOctomap::AccumulatePoint2d(vector<OcTree
 
 
     }
+
     return AccumulatePoint2d;
+
 }
 
 
@@ -396,6 +402,7 @@ vector<diane_octomap::Line*> diane_octomap::DianeOctomap::createGroupLines(vecto
     }
 
     return Lines;
+
 }
 
 
@@ -439,22 +446,27 @@ vector<vector<diane_octomap::Line*>> diane_octomap::DianeOctomap::GroupLineByRho
 
          }
     }
+
     return GroupedLineByTheta;
 
 }
+
 
 //Filtra os grupos no qual o numero de retas possam forma um degrau, no qual o max e min depende da resoluçao do octomap
 vector<vector<diane_octomap::Line*>> diane_octomap::DianeOctomap::FilterGroups(vector<vector<diane_octomap::Line*>> GroupLineByTheta, int min, int max)
 {
     vector<vector<diane_octomap::Line*>> FilterGroups;
+
     for (int i=0;i<GroupLineByTheta.size();i++)
     {
         if(GroupLineByTheta.at(i).size()>=min && GroupLineByTheta.at(i).size()<=max)
         {
-         FilterGroups.push_back(GroupLineByTheta.at(i));
+            FilterGroups.push_back(GroupLineByTheta.at(i));
         }
     }
+
     return FilterGroups;
+
 }
 
 
@@ -575,7 +587,9 @@ vector<vector<diane_octomap::Line*>> diane_octomap::DianeOctomap::GroupLineByThe
              }
 
          }
+
     }
+
     return GroupedLineByTheta;
 
 }
