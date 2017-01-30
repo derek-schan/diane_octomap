@@ -545,6 +545,9 @@ void diane_octomap::DianeOctomap::PopulateLines(vector<diane_octomap::Line*>& Me
 
         }
 
+        //Após popular as folhas, atualiza os limites de X da linha
+        Merged_Lines.at(i)->UpdateXLimits();
+
     }
 
 }
@@ -1878,10 +1881,6 @@ diane_octomap::Step::~Step()
 
 diane_octomap::Stair::Stair()
 {
-//    Min_X = 1000;
-//    Max_X = -1000;
-//    Min_Y = 1000;
-//    Max_Y = -1000;
     Min_Z = 1000;
     Max_Z = -1000;
 
@@ -1948,24 +1947,6 @@ void diane_octomap::Stair::CalculateStairProperties()
     for(int i=0; i<Leafs_In_Stair.size(); i++)
     {
         OcTree::leaf_bbx_iterator leaf = Leafs_In_Stair.at(i);
-
-//        if(Min_X > leaf.getX())
-//        {
-//            Min_X = leaf.getX();
-//        }
-//        if(Max_X < leaf.getX())
-//        {
-//            Max_X = leaf.getX();
-//        }
-
-//        if(Min_Y > leaf.getY())
-//        {
-//            Min_Y = leaf.getY();
-//        }
-//        if(Max_Y < leaf.getY())
-//        {
-//            Max_Y = leaf.getY();
-//        }
 
         if(Min_Z > leaf.getZ())
         {
@@ -2230,6 +2211,27 @@ diane_octomap::Line::Line()
     max_X = -1000;
     min_Z = 1000;
     max_Z = -1000;
+}
+
+
+//Funcão que observa as folhas presentes na linha e atualiza o máximo e o mínimo
+void diane_octomap::Line::UpdateXLimits()
+{
+    for(int i=0; i<Leafs_In_Line.size(); i++)
+    {
+        OcTree::leaf_bbx_iterator leaf = Leafs_In_Line.at(i);
+
+        if(min_X > leaf.getX())
+        {
+            min_X = leaf.getX();
+        }
+
+        if(max_X < leaf.getX())
+        {
+            max_X = leaf.getX();
+        }
+    }
+
 }
 
 
