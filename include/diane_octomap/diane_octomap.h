@@ -290,14 +290,22 @@ public:
     vector<vector<Line*>> FilterGroups(vector<vector<diane_octomap::Line*>> GroupLineByTheta,int min, int max);
 
     //Gerando um único objeto Line para cada grupo de Line's que possuem o mesmo Rho e Theta (armazenando o min_Z e o max_Z em que essa cada Line ocorre)
-    vector<Line*> MergeGroupLines(vector<vector<Line*>> GroupedLines);
+    vector<Line*> MergeGroupedLines(vector<vector<Line*>> GroupedLines);
 
     //Populando cada Line obtido com as folhas que possuam Z dentro dos limites e que estejam à uma distância mínima da reta
     void PopulateLines(vector<Line*>& Merged_Lines, vector<vector<OcTree::leaf_bbx_iterator>> Leaf_Groups);
 
 
-    vector<vector<Line*>> GroupLineByTheta(vector<vector<diane_octomap::Line*>> Lines);
-    vector<Line*> MergeLines(vector<diane_octomap::Line*> Lines);
+
+    //Agrupando os segmentos de linhas que possuírem o mesmo Theta e que possuírem o intervalo aceitável
+    vector<vector<Line*>> GroupLinesByThetaAndInterval(vector<diane_octomap::Line*> Segmented_Lines);
+
+
+    //Realizando um Merge para todos os grupos de linhas com o mesmo Theta e que possuem o Rho's muito próximos
+    vector<vector<Line*>> MergeSegmentedGroupsLines(vector<vector<Line*>> GroupThetaIntervalLines);
+
+    vector<Line*> MergeSegmentedGroup(vector<Line*> SegmentedGroupLines);
+
 
     ///*** Fim da Lógica utilizando retas***
 

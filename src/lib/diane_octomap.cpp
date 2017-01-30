@@ -147,13 +147,23 @@ void diane_octomap::DianeOctomap::GenerateOcTreeFromFile()
 
 void diane_octomap::DianeOctomap::GetOccupiedLeafsOfBBX(OcTree* octree)
 {
+//    point3d min;
+//    min.x() = -0.70;
+//    min.y() = 0;
+//    min.z() = 0;
+
+//    point3d max;
+//    max.x() = 0.65;
+//    max.y() = 100;
+//    max.z() = 100;
+
     point3d min;
-    min.x() = -0.70;
-    min.y() = 0;
-    min.z() = 0;
+    min.x() = -5;
+    min.y() = -5;
+    min.z() = -5;
 
     point3d max;
-    max.x() = 0.65;
+    max.x() = 5;
     max.y() = 100;
     max.z() = 100;
 
@@ -199,15 +209,27 @@ void diane_octomap::DianeOctomap::StairDetection2d()
     vector<vector<diane_octomap::Line*>> Filtered_Groups = FilterGroups(GroupLinesByRhoTheta, 3, 5);
 
 
-    vector<diane_octomap::Line*> Merged_Lines = MergeGroupLines(Filtered_Groups);
+    vector<diane_octomap::Line*> Merged_Lines = MergeGroupedLines(Filtered_Groups);
 
 
     PopulateLines(Merged_Lines, Grouped_Leafs);
 
 
-    vector<vector<Line*>> GroupTheta = GroupLineByTheta(Filtered_Groups);
+    vector<vector<Line*>> GroupThetaIntervalLines = GroupLinesByThetaAndInterval(Merged_Lines);
 
-//    vector<diane_octomap::Line*> teste = MergeLines(GroupTheta.at(0));
+
+    //Filtrando os grupos de linhas que não possuem elementos suficientes para formar degraus
+    vector<vector<Line*>> Groups;
+    for(int i=0; i<GroupThetaIntervalLines.size(); i++)
+    {
+        if(GroupThetaIntervalLines.at(i).size() >= Min_Num_Steps)
+        {
+            Groups.push_back(GroupThetaIntervalLines.at(i));
+        }
+    }
+
+
+
     cout<<endl;
 
 }
@@ -470,7 +492,7 @@ vector<vector<diane_octomap::Line*>> diane_octomap::DianeOctomap::FilterGroups(v
 }
 
 
-vector<diane_octomap::Line*> diane_octomap::DianeOctomap::MergeGroupLines(vector<vector<diane_octomap::Line*>> GroupedLines)
+vector<diane_octomap::Line*> diane_octomap::DianeOctomap::MergeGroupedLines(vector<vector<diane_octomap::Line*>> GroupedLines)
 {
     vector<Line*> Merged_Lines;
 
@@ -553,86 +575,99 @@ void diane_octomap::DianeOctomap::PopulateLines(vector<diane_octomap::Line*>& Me
 }
 
 
-//Forma o grupo com as retas que possuem o mesmo theta
-vector<vector<diane_octomap::Line*>> diane_octomap::DianeOctomap::GroupLineByTheta(vector<vector<diane_octomap::Line*>> Lines)
+//Agrupando as linhas que possuem o mesmo Theta e pelos limites de X
+vector<vector<diane_octomap::Line*>> diane_octomap::DianeOctomap::GroupLinesByThetaAndInterval(vector<diane_octomap::Line*> Segmented_Lines)
 {
-    vector<vector<diane_octomap::Line*>>GroupedLineByTheta;
-    double theta;
-    //Separando os planos por Theta
+    vector<vector<Line*>> Groups_Lines;
 
-    for(int i=0; i<Lines.size(); i++)
+    for(int i=0; i<Segmented_Lines.size(); i++)
     {
-        for (int k=0; k<Lines.at(i).size();k++)
+        Line* line = Segmented_Lines.at(i);
+        double line_rho = line->Line_Rho;
+        double line_theta = line->Line_Theta;   //Em graus
+
+        bool group_found = false;
+
+        for(int j=0; j<Groups_Lines.size(); j++)
         {
-             theta=Lines.at(i).at(k)->Line_Theta;
-
-             bool Group_Found = false;
-
-             //Verificando se o theta já faz parte de um grupo
-             for(int j=0; j<GroupedLineByTheta.size(); j++)
-             {
-                 if((theta == ((GroupedLineByTheta.at(j).at(0)->Line_Theta))))
-                 {
-                     GroupedLineByTheta.at(j).push_back(Lines.at(i).at(k));
-                     Group_Found = true;
-                     break;
-                 }
-
-             }
-
-             if(Group_Found == false)
-             {
-                 //Se o grupo não foi encontrado, cria um novo grupo
-                 vector<diane_octomap::Line*> NewGroup;
-                 NewGroup.push_back(Lines.at(i).at(k));
-
-                 GroupedLineByTheta.push_back(NewGroup);
-             }
-
-         }
-
-    }
-
-    return GroupedLineByTheta;
-
-}
-
-
-vector<diane_octomap::Line*> diane_octomap::DianeOctomap::MergeLines(vector<diane_octomap::Line*> Lines)
-{
-    vector<diane_octomap::Line*> MergeLines;
-    for (int i=0;i<Lines.size()-1;i++)
-    {
-        for(int j=i+1;j<Lines.size();j++)
-        {
-            if((Lines.at(i)->Line_Rho-Lines.at(j)->Line_Rho) < 0.1)
+            //Se a linha possuir um theta igual ao de um grupo, verifica se o segmento da nova linha possui limites de X condizentes com o da primeira linha do grupo
+            if(line_theta == Groups_Lines.at(j).at(0)->Line_Theta)
             {
-                Line* line= new Line();
-                line->Line_Rho=(Lines.at(i)->Line_Rho*Lines.at(i)->Line_Theta+Lines.at(j)->Line_Rho*Lines.at(j)->Line_Theta)/(Lines.at(i)->Line_Votes+Lines.at(j)->Line_Votes);
-                line->Line_Theta=Lines.at(i)->Line_Theta;
-                line->Line_Votes=Lines.at(i)->Line_Theta+Lines.at(j)->Line_Theta;
-                line->Line_Z=Lines.at(i)->Line_Z;
+                //Calculando a normal da reta (para verificar a posicão do intervalo em X na reta da 1a linha)
+                double line_normal[2];
+                line_normal[0] = cos(line_theta * (M_PI/180));
+                line_normal[1] = sin(line_theta * (M_PI/180));
 
-                MergeLines.push_back(line);
+                double dist = fabs(line_rho - Groups_Lines.at(j).at(0)->Line_Rho);
 
-                for(int k =0;k <Lines.size();k++)
+                double temp_min_X = line->min_X - (dist*line_normal[0]);
+                double temp_max_X = line->max_X - (dist*line_normal[0]);
+
+
+                //Se as distâncias entre os mínimos dos intervalos e entre os máximos dos intervalos estiverem dentro da tolerância, adiciona a nova linha nesse grupo
+                double X_Tolerance = 0.10;
+
+                if((fabs(temp_min_X - Groups_Lines.at(j).at(0)->min_X) <= X_Tolerance) && (fabs(temp_max_X - Groups_Lines.at(j).at(0)->max_X) <= X_Tolerance))
                 {
-                    if(k != i && k != j)
-                    {
-                        MergeLines.push_back(Lines.at(k));
-                    }
+                    Groups_Lines.at(j).push_back(line);
+                    group_found = true;
+
+                    break;
                 }
-                diane_octomap::DianeOctomap::MergeLines(MergeLines);
+
             }
+
+        }
+
+        //Se não encontrou um grupo válido (mesmo Theta e com intervalo dentro dos limites determinados pelo grupo), cria um novo.
+        if(group_found == false)
+        {
+            vector<Line*> Group_Lines;
+            Group_Lines.push_back(line);
+
+            //Adicionando o novo grupo
+            Groups_Lines.push_back(Group_Lines);
         }
 
     }
-    return MergeLines;
+
+    return Groups_Lines;
+
 }
 
 
+vector<vector<diane_octomap::Line*>> diane_octomap::DianeOctomap::MergeSegmentedGroupsLines(vector<vector<diane_octomap::Line*>> GroupThetaIntervalLines)
+{
+    vector<vector<Line*>> Merged_Segmented_Lines;
+
+    //Para cada grupo, aplica o merge de Rho
+    for(int i=0; i<GroupThetaIntervalLines.size(); i++)
+    {
+        vector<Line*> Merged_Lines = MergeSegmentedGroup(GroupThetaIntervalLines.at(i));
+
+        if(Merged_Lines.size() >= Min_Num_Steps)
+        {
+            Merged_Segmented_Lines.push_back(Merged_Lines);
+        }
+    }
 
 
+    return Merged_Segmented_Lines;
+}
+
+
+vector<diane_octomap::Line*> diane_octomap::DianeOctomap::MergeSegmentedGroup(vector<diane_octomap::Line*> SegmentedGroupLines)
+{
+    vector<Line*> Merged_Lines;
+
+    Line* NewLine = new Line();
+
+    //Buscando dois Lines no grupo que possam fazer merge
+
+
+
+    return Merged_Lines;
+}
 
 
 
