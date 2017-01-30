@@ -545,8 +545,8 @@ void diane_octomap::DianeOctomap::PopulateLines(vector<diane_octomap::Line*>& Me
 
         }
 
-        //Após popular as folhas, atualiza os limites de X da linha
-        Merged_Lines.at(i)->UpdateXLimits();
+        //Após popular as folhas, atualiza os limites de X e de Z da linha
+        Merged_Lines.at(i)->UpdateLimits();
 
     }
 
@@ -2214,21 +2214,31 @@ diane_octomap::Line::Line()
 }
 
 
-//Funcão que observa as folhas presentes na linha e atualiza o máximo e o mínimo
-void diane_octomap::Line::UpdateXLimits()
+//Funcão que observa as folhas presentes na linha e atualiza os limites de X e de Z da linha
+void diane_octomap::Line::UpdateLimits()
 {
     for(int i=0; i<Leafs_In_Line.size(); i++)
     {
         OcTree::leaf_bbx_iterator leaf = Leafs_In_Line.at(i);
 
+        //Atualizando os limites de X
         if(min_X > leaf.getX())
         {
             min_X = leaf.getX();
         }
-
         if(max_X < leaf.getX())
         {
             max_X = leaf.getX();
+        }
+
+        //Atualizando os limites de Z
+        if(min_Z > leaf.getZ())
+        {
+            min_Z = leaf.getZ();
+        }
+        if(max_Z < leaf.getZ())
+        {
+            max_Z = leaf.getZ();
         }
     }
 

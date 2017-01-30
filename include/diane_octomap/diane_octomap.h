@@ -52,7 +52,7 @@ public:
 
     Line();
 
-    void UpdateXLimits();
+    void UpdateLimits();
 
     virtual ~Line();
 
