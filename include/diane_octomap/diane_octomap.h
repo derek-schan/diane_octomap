@@ -52,6 +52,8 @@ public:
 
     Line();
 
+    void sortLeafs();
+
     void UpdateLimits();
 
     virtual ~Line();
@@ -294,6 +296,9 @@ public:
 
     //Populando cada Line obtido com as folhas que possuam Z dentro dos limites e que estejam à uma distância mínima da reta
     void PopulateLines(vector<Line*>& Merged_Lines, vector<vector<OcTree::leaf_bbx_iterator>> Leaf_Groups);
+
+    //Seperando as retas como segmento de reta
+    vector<Line*> segLine(vector<Line*> Lines);
 
 
 
