@@ -205,10 +205,10 @@ void diane_octomap::DianeOctomap::StairDetection2d()
     PopulateLines(Merged_Lines, Grouped_Leafs);
 
 
-    vector<vector<Line*>> GroupTheta = GroupLineByTheta(Filtered_Groups);
+//    vector<vector<Line*>> GroupTheta = GroupLineByTheta(Filtered_Groups);
 
-//    vector<diane_octomap::Line*> teste = MergeLines(GroupTheta.at(0));
-    cout<<endl;
+    vector<diane_octomap::Line*> seqLines = segLine(Merged_Lines);
+
 
 }
 
@@ -547,8 +547,73 @@ void diane_octomap::DianeOctomap::PopulateLines(vector<diane_octomap::Line*>& Me
 
         //Após popular as folhas, atualiza os limites de X e de Z da linha
         Merged_Lines.at(i)->UpdateLimits();
+        Merged_Lines.at(i)->sortLeafs();
+    }
+
+}
+
+vector<diane_octomap::Line*> diane_octomap::DianeOctomap::segLine(vector<Line*> Lines)
+{
+    vector<diane_octomap::Line*> newLine;
+    bool create_newline = false;
+
+    int i;
+    for (i = 0;i<Lines.size();i++)
+    {
+        Line* line = Lines.at(i);
+        bool break_occ = false;
+        for(int j = 0 ; j < line->Leafs_In_Line.size()-1; j++)
+        {
+
+            if((fabs(line->Leafs_In_Line.at(j).getX() - line->Leafs_In_Line.at(j+1).getX()))>0.11)
+            {
+                double x = line->Leafs_In_Line.at(j).getX();
+                double y = line->Leafs_In_Line.at(j+1).getX();
+                create_newline = true;
+                break_occ = true;
+                Line* newline1 = new Line();
+                Line* newline2 = new Line();
+
+                newline1->Line_Rho = line->Line_Rho;
+                newline1->Line_Theta = line->Line_Theta;
+                newline2->Line_Rho = line->Line_Rho;
+                newline2->Line_Theta = line->Line_Theta;
+
+
+                for(int k=0;k<=j;k++)
+                {
+                    OcTree::leaf_bbx_iterator leaf = line->Leafs_In_Line.at(k);
+                    newline1->Leafs_In_Line.push_back(leaf);
+                }
+
+                for(int r=j+1;r<line->Leafs_In_Line.size();r++)
+                {
+                    newline2->Leafs_In_Line.push_back(line->Leafs_In_Line.at(r));
+                }
+                newline1->UpdateLimits();
+                newline2->UpdateLimits();
+                newLine.push_back(newline1);
+                newLine.push_back(newline2);
+
+                break;
+            }
+
+        }
+
+        if(break_occ) {break;}
+        newLine.push_back(Lines.at(i));
+
 
     }
+
+
+    for(int k=i+1;k<Lines.size();k++)
+    {
+        newLine.push_back(Lines.at(k));
+    }
+    if(create_newline){newLine=segLine(newLine);}
+    return newLine;
+
 
 }
 
@@ -2244,6 +2309,24 @@ void diane_octomap::Line::UpdateLimits()
 
 }
 
+void diane_octomap::Line::sortLeafs()
+{
+    bool cont = true;
+    while(cont)
+    {
+        cont=false;
+        for (int i = 0;i < Leafs_In_Line.size()-1; i++)
+        {
+            if(Leafs_In_Line.at(i).getX() > Leafs_In_Line.at(i+1).getX())
+            {
+                OcTree::leaf_bbx_iterator leaf = Leafs_In_Line.at(i);
+                Leafs_In_Line.at(i) = Leafs_In_Line.at(i+1);
+                Leafs_In_Line.at(i+1) = leaf;
+                cont=true;
+            }
+        }
+    }
+}
 
 diane_octomap::Line::~Line()
 {
