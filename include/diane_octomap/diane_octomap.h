@@ -31,6 +31,33 @@ using namespace std;
 namespace diane_octomap {
 
 
+class Line
+{
+protected:
+
+public:
+    vector<OcTree::leaf_bbx_iterator> Leafs_In_Line;
+
+    double Line_Rho;
+    double Line_Theta;
+    double Line_Votes;
+    double Line_Z;
+
+    //Variáveis que serão utilizadas quando forem agrupadas
+    double min_X;
+    double max_X;
+    double min_Z;
+    double max_Z;
+
+
+    Line();
+
+
+    virtual ~Line();
+
+};
+
+
 //Estrutura que armazenará as folhas referentes à esse degrau e as informacões de um degrau (comprimento, largura e altura)
 class Step
 {
@@ -59,7 +86,7 @@ public:
 
 
     //Filtrando as colunas de folhas que estão fora dos limites padrões de altura para degraus
-    void Step_Height_Filter();
+    void StepHeightFilter();
 
 
     void StepHeightHistogram();
@@ -84,10 +111,6 @@ public:
     double Total_Width;
     double Total_Height;
 
-    double Min_X;
-    double Max_X;
-    double Min_Y;
-    double Max_Y;
     double Min_Z;
     double Max_Z;
 
@@ -100,6 +123,10 @@ public:
 
     //(Xi,Yi) e (Xf,Yf)
     vector<vector<double>> Aresta;
+
+    vector<vector<double>> Points;
+
+    double Plane_Alpha;
 
 
     Stair();
@@ -175,9 +202,9 @@ protected:
     double Theta_Passo; //Incremento em Theta
     double Phi_Passo;   //Incremento em Phi
 
-    double Rho_Num;
-    double Theta_Num;
-    double Phi_Num;
+    int Rho_Num;
+    int Theta_Num;
+    int Phi_Num;
 
     //Diferenca máxima entre o Rho do ponto e o Rho da célula para ser considerado como um voto
     double Max_Planes_Distance = 0.1;
@@ -236,6 +263,46 @@ public:
     void GetOccupiedLeafsOfBBX(OcTree* octree);
 
 
+    ///*** Lógica utilizando retas***
+    //A identificacão da escada será sobre o vetor de folhas contidas dentro do Bounding Box usando uma lógica em 2D
+    void StairDetection2d();
+
+    //Agrupando as folhas que possuem o mesmo Z (estão no mesmo nível) em grupos
+    vector<vector<OcTree::leaf_bbx_iterator>> GroupPlanesByZ(vector<OcTree::leaf_bbx_iterator> Leafs);
+
+    //Obtendo a largura e comprimento do espaco definido pelas folhas
+    vector<double> getParameter(vector<OcTree::leaf_bbx_iterator> Leafs);
+
+    //Aplicando a Transformada de Hough para todos os níveis de Z, obtendo todas um grupo de grupo de retas (cada grupo de retas é referente à um nível de Z)
+    vector<vector<Line*>> LineHoughTransform(double length, double width,vector<vector<OcTree::leaf_bbx_iterator>> Leafs);
+
+    //Funcão que, para um determinado grupo de folhas, cria o acumulador, acumula os votos e extrai as retas desse grupo
+    vector<vector<int>> AccumulatePoint2d(vector<OcTree::leaf_bbx_iterator> LeafZ);
+
+    //Funcão que cria um grupo de objetos Line, referente às retas em um determinado nível de Z
+    vector<Line*> createGroupLines(vector<vector<int>>Votes, double Z);
+
+    //Agrupando as linhas por Rho e Theta (para identificar as retas recorrentes em vários níveis de Z)
+    vector<vector<Line*>> GroupLineByRhoTheta(vector<vector<diane_octomap::Line*>> Lines);
+
+    //Filtrando as retas que aparecem em muitos níveis de Z - provavelmente são paredes - ou que aparecem muitos poucos níveis de Z - provavelmente são ruídos)
+    vector<vector<Line*>> FilterGroups(vector<vector<diane_octomap::Line*>> GroupLineByTheta,int min, int max);
+
+    //Gerando um único objeto Line para cada grupo de Line's que possuem o mesmo Rho e Theta (armazenando o min_Z e o max_Z em que essa cada Line ocorre)
+    vector<Line*> MergeGroupLines(vector<vector<Line*>> GroupedLines);
+
+    //Populando cada Line obtido com as folhas que possuam Z dentro dos limites e que estejam à uma distância mínima da reta
+    void PopulateLines(vector<Line*>& Merged_Lines, vector<vector<OcTree::leaf_bbx_iterator>> Leaf_Groups);
+
+
+    vector<vector<Line*>> GroupLineByTheta(vector<vector<diane_octomap::Line*>> Lines);
+    vector<Line*> MergeLines(vector<diane_octomap::Line*> Lines);
+
+    ///*** Fim da Lógica utilizando retas***
+
+
+    ///*** Lógica utilizando planos***
+
     //A identificacão da escada será sobre o vetor de folhas contidas dentro do Bounding Box
     void StairDetection();
 
@@ -293,10 +360,18 @@ public:
     vector<Stair*> StairCandidatesDetection(vector<vector<vector<double>>> Grouped_Planes);
 
 
+    void CleanStairsLeafs(vector<Stair*>& Detected_Stair_Candidates);
+
+
+    vector<Stair*> CleanStairSteps(vector<Stair*>& Detected_Stair_Candidates);
+
+
+    vector<Stair*> ModelStairs(vector<Stair*>& Stair_Candidates);
+
+
+
     //Métodos referentes à aplicacão dos planos encontrados no octomap.
     Stair* ObtainStairCandidateFromGroup(vector<vector<double>> Group_Planes);
-
-
 
 
     //Métodos referentes à couts e à escrita em arquivos
@@ -313,6 +388,9 @@ public:
 
 
     void WriteModeledStairPropertiesToFile(diane_octomap::Stair* Stair);
+
+
+    ///*** Lógica utilizando planos***
 
 
     virtual ~DianeOctomap();
