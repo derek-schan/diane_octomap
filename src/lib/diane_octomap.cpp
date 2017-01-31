@@ -214,10 +214,13 @@ void diane_octomap::DianeOctomap::StairDetection2d()
 
     PopulateLines(Merged_Lines, Grouped_Leafs);
 
+    //Segmentando as linhas
+    vector<diane_octomap::Line*> Segmented_Lines = segLine(Merged_Lines);
 
-    vector<vector<Line*>> GroupThetaIntervalLines = GroupLinesByThetaAndInterval(Merged_Lines);
 
-    vector<diane_octomap::Line*> seqLines = segLine(Merged_Lines);
+    //Agrupando as linhas por Theta e pelo intervalo do segmento
+    vector<vector<Line*>> GroupThetaIntervalLines = GroupLinesByThetaAndInterval(Segmented_Lines);
+
 
     //Filtrando os grupos de linhas que não possuem elementos suficientes para formar degraus
     vector<vector<Line*>> Groups;
@@ -229,6 +232,7 @@ void diane_octomap::DianeOctomap::StairDetection2d()
         }
     }
 
+    //Aplicando o merge em Rho para cada Grupo
 
 
     cout<<endl;
@@ -729,8 +733,15 @@ vector<diane_octomap::Line*> diane_octomap::DianeOctomap::MergeSegmentedGroup(ve
 
     Line* NewLine = new Line();
 
-    //Buscando dois Lines no grupo que possam fazer merge
+    int i = 0;
 
+    //Buscando dois Lines no grupo que possam fazer merge
+    for(i=0; i<SegmentedGroupLines.size(); i++)
+    {
+
+
+
+    }
 
 
     return Merged_Lines;
