@@ -221,6 +221,8 @@ protected:
     double Filter_Vote_Max;
 
     //Definindo as tolerâncias para o merge dos planos
+    double delta_merge_Rho;
+
     double delta_Rho;
     double delta_Theta;
     double delta_Phi;
@@ -310,6 +312,13 @@ public:
     vector<vector<Line*>> MergeSegmentedGroupsLines(vector<vector<Line*>> GroupThetaIntervalLines);
 
     vector<Line*> MergeSegmentedGroup(vector<Line*> SegmentedGroupLines);
+
+    bool CanMergeLines(Line* LineA, Line* LineB);
+
+    diane_octomap::Line* FitLine(Line* LineA, Line* LineB);
+
+
+    vector<Line*> SortGroupLines(vector<Line*> GroupLines);
 
 
     ///*** Fim da Lógica utilizando retas***

@@ -21,6 +21,8 @@ diane_octomap::DianeOctomap::DianeOctomap()
     Filter_Vote_Max = 400;
 
     //Definindo as tolerâncias para o merge dos planos
+    delta_merge_Rho = 0.11;
+
     delta_Rho = 0.1;
     delta_Theta = 0;
     delta_Phi = 0;
@@ -94,8 +96,8 @@ void diane_octomap::DianeOctomap::InternalCycleProcedure()
 
 void diane_octomap::DianeOctomap::GenerateOcTreeFromFile()
 {
-//    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_5.ot";
-    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_5.ot";
+    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_5.ot";
+//    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_5.ot";
 
     AbstractOcTree* abs_tree = AbstractOcTree::read(otFileName);
     if(abs_tree) // read error returns NULL
@@ -206,7 +208,7 @@ void diane_octomap::DianeOctomap::StairDetection2d()
     vector<vector<diane_octomap::Line*>> GroupLinesByRhoTheta = GroupLineByRhoTheta(Lines);
 
 
-    vector<vector<diane_octomap::Line*>> Filtered_Groups = FilterGroups(GroupLinesByRhoTheta, 3, 5);
+    vector<vector<diane_octomap::Line*>> Filtered_Groups = FilterGroups(GroupLinesByRhoTheta, 3, 10);
 
 
     vector<diane_octomap::Line*> Merged_Lines = MergeGroupedLines(Filtered_Groups);
@@ -223,16 +225,20 @@ void diane_octomap::DianeOctomap::StairDetection2d()
 
 
     //Filtrando os grupos de linhas que não possuem elementos suficientes para formar degraus
-    vector<vector<Line*>> Groups;
+    vector<vector<Line*>> Filtered_Segmented_Groups;
     for(int i=0; i<GroupThetaIntervalLines.size(); i++)
     {
         if(GroupThetaIntervalLines.at(i).size() >= Min_Num_Steps)
         {
-            Groups.push_back(GroupThetaIntervalLines.at(i));
+            Filtered_Segmented_Groups.push_back(GroupThetaIntervalLines.at(i));
         }
     }
 
     //Aplicando o merge em Rho para cada Grupo
+    vector<vector<Line*>> Merged_Segmented_Groups = MergeSegmentedGroupsLines(Filtered_Segmented_Groups);
+
+
+    //Busca uma sequência válida que seria referente à uma escada
 
 
     cout<<endl;
@@ -603,6 +609,7 @@ vector<diane_octomap::Line*> diane_octomap::DianeOctomap::segLine(vector<Line*> 
 
                 newline1->Line_Rho = line->Line_Rho;
                 newline1->Line_Theta = line->Line_Theta;
+
                 newline2->Line_Rho = line->Line_Rho;
                 newline2->Line_Theta = line->Line_Theta;
 
@@ -617,6 +624,10 @@ vector<diane_octomap::Line*> diane_octomap::DianeOctomap::segLine(vector<Line*> 
                 {
                     newline2->Leafs_In_Line.push_back(line->Leafs_In_Line.at(r));
                 }
+
+                newline1->Line_Votes = newline1->Leafs_In_Line.size();
+                newline2->Line_Votes = newline2->Leafs_In_Line.size();
+
                 newline1->UpdateLimits();
                 newline2->UpdateLimits();
                 newLine.push_back(newline1);
@@ -718,7 +729,11 @@ vector<vector<diane_octomap::Line*>> diane_octomap::DianeOctomap::MergeSegmented
 
         if(Merged_Lines.size() >= Min_Num_Steps)
         {
-            Merged_Segmented_Lines.push_back(Merged_Lines);
+            //Ordenando as linhas no grupo por Rho
+            vector<Line*> Sorted_Lines = SortGroupLines(Merged_Lines);
+
+            //Adicionando o grupo que passou pelo Merge e pelo Sort no retorno
+            Merged_Segmented_Lines.push_back(Sorted_Lines);
         }
     }
 
@@ -733,20 +748,213 @@ vector<diane_octomap::Line*> diane_octomap::DianeOctomap::MergeSegmentedGroup(ve
 
     Line* NewLine = new Line();
 
-    int i = 0;
+    int i = 0, j = 0;
+
+
+    bool merge_break = false;
 
     //Buscando dois Lines no grupo que possam fazer merge
-    for(i=0; i<SegmentedGroupLines.size(); i++)
+    if(SegmentedGroupLines.size() > 0)
     {
+        //Para cada Line, verifica se cada um dos planos seguintes podem ser agrupados com o inicial
+        for(i=0; i<SegmentedGroupLines.size() - 1; i++)
+        {
+            for(j=i+1; j<SegmentedGroupLines.size(); j++)
+            {
+                if(CanMergeLines(SegmentedGroupLines.at(i), SegmentedGroupLines.at(j)))
+                {
+                    //Se dois Lines forem marcados como mergeable, executa o MergeSegmentedGroup de novo, repassando o novo SegmentedGroupLines (com o novo Line e sem os dois antigos)
+                    NewLine = FitLine(SegmentedGroupLines.at(i), SegmentedGroupLines.at(j));
+                    merge_break = true;
+                    break;
+                }
 
+            }
 
+            if(merge_break == true)
+            {
+                break;
+            }
+
+        }
 
     }
 
+    if(merge_break)
+    {
+        vector<Line*> temp_Lines;
+
+        temp_Lines.push_back(NewLine);
+
+        //Copiando os planos antigos para o vetor temporário
+        for(int ii=0; ii<i; ii++)
+        {
+            temp_Lines.push_back(SegmentedGroupLines.at(ii));
+        }
+        for(int jj=i+1; jj<j; jj++)
+        {
+            temp_Lines.push_back(SegmentedGroupLines.at(jj));
+        }
+        for(int kk=j+1; kk<SegmentedGroupLines.size(); kk++)
+        {
+            temp_Lines.push_back(SegmentedGroupLines.at(kk));
+        }
+
+        //Recursão para obter somente os Lines aglutinados finais
+        Merged_Lines = MergeSegmentedGroup(temp_Lines);
+
+    }
+    else
+    {
+        //Se não existirem mais Lines a serem aglutinados, retorna o vetor que foi recebido
+        Merged_Lines = SegmentedGroupLines;
+    }
 
     return Merged_Lines;
+
 }
 
+
+bool diane_octomap::DianeOctomap::CanMergeLines(Line* LineA, Line* LineB)
+{
+
+    bool Result = false;
+
+    double RhoA = LineA->Line_Rho;
+    double RhoB = LineB->Line_Rho;
+
+
+    //Se a distância em Rho for menor do que um delta,
+    if((fabs(RhoA - RhoB) <= delta_merge_Rho))
+    {
+        Result = true;
+    }
+
+
+    return Result;
+
+}
+
+
+diane_octomap::Line* diane_octomap::DianeOctomap::FitLine(diane_octomap::Line* LineA, diane_octomap::Line* LineB)
+{
+    //Inicialmente, o Line resultante possuirá parâmetros RHO e THETA iguais às médias ponderadas dos parâmetros dos planos recebidos, onde o peso é a quantidade de votos.
+
+    Line* Result_Line = new Line();
+
+    double Rho = (LineA->Line_Rho * LineA->Line_Votes + LineB->Line_Rho * LineB->Line_Votes)/(LineA->Line_Votes + LineB->Line_Votes);
+    double Theta = (LineA->Line_Theta * LineA->Line_Votes + LineB->Line_Theta * LineB->Line_Votes)/(LineA->Line_Votes + LineB->Line_Votes);
+
+    if(Theta > 360)
+    {
+        Theta = remainder(Theta,360);
+    }
+
+    double Votes = (LineA->Line_Votes + LineB->Line_Votes);
+
+    Result_Line->Line_Rho = Rho;
+    Result_Line->Line_Theta = Theta;
+    Result_Line->Line_Votes = Votes;
+
+
+    //Repassando as folhas dos Lines antigos para o novo Line
+    for(int i=0; i<LineA->Leafs_In_Line.size(); i++)
+    {
+        OcTree::leaf_bbx_iterator leaf = LineA->Leafs_In_Line.at(i);
+
+        if((find(Result_Line->Leafs_In_Line.begin(), Result_Line->Leafs_In_Line.end(), leaf) != Result_Line->Leafs_In_Line.end()) == false)
+        {
+            Result_Line->Leafs_In_Line.push_back(leaf);
+        }
+
+    }
+    for(int j=0; j<LineB->Leafs_In_Line.size(); j++)
+    {
+        OcTree::leaf_bbx_iterator leaf = LineB->Leafs_In_Line.at(j);
+
+        if((find(Result_Line->Leafs_In_Line.begin(), Result_Line->Leafs_In_Line.end(), leaf) != Result_Line->Leafs_In_Line.end()) == false)
+        {
+            Result_Line->Leafs_In_Line.push_back(leaf);
+        }
+
+    }
+
+    Result_Line->sortLeafs();
+    Result_Line->UpdateLimits();
+
+
+    return Result_Line;
+
+}
+
+
+vector<diane_octomap::Line*> diane_octomap::DianeOctomap::SortGroupLines(vector<diane_octomap::Line*> GroupLines)
+{
+    vector<Line*> SortedGroup;
+    vector<Line*> TempGroup;
+
+    int i = 0, j = 0;
+
+    bool swap_break = false;
+
+    for(i=0; i<GroupLines.size() - 1; i++)
+    {
+        Line* LineA = GroupLines.at(i);
+
+        for(j=i+1; j<GroupLines.size(); j++)
+        {
+            Line* LineB = GroupLines.at(j);
+
+            if(LineA->Line_Rho > LineB->Line_Rho)
+            {
+                swap_break = true;
+                break;
+            }
+
+        }
+
+        if(swap_break)
+        {
+            break;
+        }
+
+    }
+
+    //Se ocorreu um swap, chama novamente o Sort passando o novo grupo
+    if(swap_break)
+    {
+        //Pegando os Lines que estavam antes do 1o (não sofreram swap)
+
+        for(int ii=0; ii<i; ii++)
+        {
+            TempGroup.push_back(GroupLines.at(ii));
+        }
+
+        TempGroup.push_back(GroupLines.at(j));
+        TempGroup.push_back(GroupLines.at(i));
+
+        for(int jj=i+1; jj<j; jj++)
+        {
+            TempGroup.push_back(GroupLines.at(jj));
+        }
+
+        for(int kk=j+1; kk<GroupLines.size(); kk++)
+        {
+            TempGroup.push_back(GroupLines.at(kk));
+        }
+
+        //Recursão para ordenar o novo grupo
+        SortedGroup = SortGroupLines(TempGroup);
+
+    }
+    else
+    {
+        SortedGroup = GroupLines;
+    }
+
+    return SortedGroup;
+
+}
 
 
 
