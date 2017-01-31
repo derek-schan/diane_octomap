@@ -302,6 +302,9 @@ public:
     //Seperando as retas como segmento de reta
     vector<Line*> segLine(vector<Line*> Lines);
 
+    vector<vector<Line*>> SequenceFilter(vector<vector<Line*>> lines);
+
+    bool VerifyLineSequence(vector<Line*> Group_Lines);
 
 
     //Agrupando os segmentos de linhas que possuírem o mesmo Theta e que possuírem o intervalo aceitável

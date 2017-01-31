@@ -96,8 +96,8 @@ void diane_octomap::DianeOctomap::InternalCycleProcedure()
 
 void diane_octomap::DianeOctomap::GenerateOcTreeFromFile()
 {
-    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_5.ot";
-//    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_5.ot";
+    string otFileName = "/home/rob/catkin_ws/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_5.ot";
+//    string otFileName = "/home/rob/catkin_ws/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_5.ot";
 
     AbstractOcTree* abs_tree = AbstractOcTree::read(otFileName);
     if(abs_tree) // read error returns NULL
@@ -240,6 +240,7 @@ void diane_octomap::DianeOctomap::StairDetection2d()
 
     //Busca uma sequência válida que seria referente à uma escada
 
+    vector<vector<Line*>> Filtered_Sequence = SequenceFilter(Merged_Segmented_Groups);
 
     cout<<endl;
 
@@ -955,6 +956,74 @@ vector<diane_octomap::Line*> diane_octomap::DianeOctomap::SortGroupLines(vector<
     return SortedGroup;
 
 }
+
+vector<vector<diane_octomap::Line*>> diane_octomap::DianeOctomap::SequenceFilter(vector<vector<Line *>> lines)
+{
+    vector<vector<Line*>> FilteredSequence;
+
+    for(int i = 0; i<lines.size();i++)
+    {
+        if(VerifyLineSequence(lines.at(i)))
+        {
+            FilteredSequence.push_back(lines.at(i));
+        }
+
+    }
+
+    return FilteredSequence;
+}
+
+
+
+
+bool diane_octomap::DianeOctomap::VerifyLineSequence(vector<Line*> Group_Lines)
+{
+    vector<double> Rhos;
+    double dist = 0.35;
+    double Tol_Z = 0.1;
+
+    double minZFirstStep = Group_Lines.at(0)->min_Z;
+
+    if(fabs(minZFirstStep) < Tol_Z)
+    {
+        for(int j=0; j<Group_Lines.size(); j++)
+        {
+            Rhos.push_back((Group_Lines.at(j))->Line_Rho);
+
+        }
+
+
+        for(int k=0; k<Rhos.size()-2; k++)
+        {
+            for(int l=k+1; l<Rhos.size()-1; l++)
+            {
+
+                for(int m=l+1; m<Rhos.size(); m++)
+                {
+                    double dist1 = fabs(Rhos.at(k) - Rhos.at(l));
+                    double dist2 = fabs(Rhos.at(l) - Rhos.at(m));
+
+
+                    if(((dist1 >= Min_Step_Width ) && (dist1 <= Max_Step_Width)) && ((dist2 >= Min_Step_Width) && (dist2 <= Max_Step_Width))  )
+                    {
+                        return true;
+                    }
+
+                }
+
+            }
+
+        }
+    }
+    //Se não encontrou uma sequencia, retorna false
+    return false;
+
+}
+
+
+
+
+
 
 
 
