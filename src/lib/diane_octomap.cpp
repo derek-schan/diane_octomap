@@ -202,14 +202,14 @@ void diane_octomap::DianeOctomap::GetOccupiedLeafsOfBBX(OcTree* octree)
 void diane_octomap::DianeOctomap::StairDetection2D()
 {
 
+    vector<vector<OcTree::leaf_bbx_iterator>> Grouped_Leafs = GroupPlanesByZ(OccupiedLeafsInBBX);
+
+    //Hough - encontrando as retas em cada altura em Z
     vector<double> parameter= diane_octomap::DianeOctomap::getParameter(OccupiedLeafsInBBX);
 
     double length = parameter.at(0);
     double width = parameter.at(1);
 
-    vector<vector<OcTree::leaf_bbx_iterator>> Grouped_Leafs = GroupPlanesByZ(OccupiedLeafsInBBX);
-
-    //Hough - encontrando as retas em cada altura em Z
     vector<vector<diane_octomap::Line*>> Lines = LineHoughTransform(length, width, Grouped_Leafs);
 
 
