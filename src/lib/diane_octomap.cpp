@@ -96,8 +96,8 @@ void diane_octomap::DianeOctomap::InternalCycleProcedure()
 
 void diane_octomap::DianeOctomap::GenerateOcTreeFromFile()
 {
-    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_5.ot";
-//    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_5.ot";
+//    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_5.ot";
+    string otFileName = "/home/rob/catkin_ws/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_5.ot";
 
     AbstractOcTree* abs_tree = AbstractOcTree::read(otFileName);
     if(abs_tree) // read error returns NULL
@@ -242,6 +242,7 @@ void diane_octomap::DianeOctomap::StairDetection2d()
 
     vector<vector<Line*>> Filtered_Sequence = SequenceFilter(Merged_Segmented_Groups);
 
+   compareStair(Filtered_Sequence.at(0) , Filtered_Sequence.at(1));
 
     //Obtendo os candidatos à escada
     vector<Stair*> StairCandidates = CreateStairCandidates(Filtered_Sequence);
@@ -249,6 +250,7 @@ void diane_octomap::DianeOctomap::StairDetection2d()
 
     //***Modelando cada candidato à escada (obtendo o comprimento, largura e altura média dos degraus, a aresta inicial e os pontos de arestas referentes aos outros degraus)
     vector<Stair*> Modeled_Stairs = ModelStairs(StairCandidates);
+
 
 
     cout<<endl;
@@ -1068,8 +1070,52 @@ vector<diane_octomap::Stair*> diane_octomap::DianeOctomap::CreateStairCandidates
 
 }
 
+void diane_octomap::DianeOctomap::compareStair(vector<Line*> list1, vector<Line*> list2)
+{
+    vector<OcTree::leaf_bbx_iterator> Leafs1;
+    vector<OcTree::leaf_bbx_iterator> Leafs2;
+    vector<OcTree::leaf_bbx_iterator> Intersection;
+    vector<OcTree::leaf_bbx_iterator> Only1;
+    
+    
+
+    for (int i=0; i<list1.size(); i++)
+    {
+        for(int j = 0 ; j < list1.at(i)->Leafs_In_Line.size() ; j++)
+        {
+            Leafs1.push_back(list1.at(i)->Leafs_In_Line.at(j));
+        }
+    }
+    for (int i=0; i<list2.size(); i++)
+    {
+        for(int j = 0 ; j < list2.at(i)->Leafs_In_Line.size() ; j++)
+        {
+            Leafs2.push_back(list2.at(i)->Leafs_In_Line.at(j));
+        }
+    }
+    
+    for (int i = 0; i<Leafs1.size(); i ++)
+    {
+        bool IntersectionTrue = true;
+        for (int j = 0; j<Leafs2.size() ; j++)
+        {
+
+            if((Leafs1.at(i).getCoordinate() == Leafs2.at(j).getCoordinate()) )
+            {
+                IntersectionTrue = false;
+                Intersection.push_back(Leafs1.at(i));
+            }
+        }
+        if(IntersectionTrue)
+        {
+            Only1.push_back(Leafs1.at(i));
+        }
+    }
 
 
+    cout<< "Intersection: " <<Intersection.size()<< " Leaf1: " << Leafs1.size() <<" Leaf2: " << Leafs2.size()<< endl;
+
+}
 
 
 
