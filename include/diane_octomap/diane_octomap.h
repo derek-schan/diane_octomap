@@ -148,6 +148,7 @@ public:
 
 
     void ModelStair(double Octree_Resolution);
+    void ModelStair2D(double Octree_Resolution);
 
 
     virtual ~Stair();
@@ -272,7 +273,7 @@ public:
 
     ///*** Lógica utilizando retas***
     //A identificacão da escada será sobre o vetor de folhas contidas dentro do Bounding Box usando uma lógica em 2D
-    void StairDetection2d();
+    void StairDetection2D();
 
     //Agrupando as folhas que possuem o mesmo Z (estão no mesmo nível) em grupos
     vector<vector<OcTree::leaf_bbx_iterator>> GroupPlanesByZ(vector<OcTree::leaf_bbx_iterator> Leafs);
@@ -284,7 +285,7 @@ public:
     vector<vector<Line*>> LineHoughTransform(double length, double width,vector<vector<OcTree::leaf_bbx_iterator>> Leafs);
 
     //Funcão que, para um determinado grupo de folhas, cria o acumulador, acumula os votos e extrai as retas desse grupo
-    vector<vector<int>> AccumulatePoint2d(vector<OcTree::leaf_bbx_iterator> LeafZ);
+    vector<vector<int>> AccumulatePoint2D(vector<OcTree::leaf_bbx_iterator> LeafZ);
 
     //Funcão que cria um grupo de objetos Line, referente às retas em um determinado nível de Z
     vector<Line*> createGroupLines(vector<vector<int>>Votes, double Z);
@@ -335,69 +336,69 @@ public:
     ///*** Fim da Lógica utilizando retas***
 
 
-    ///*** Lógica utilizando planos***
+//    ///*** Lógica utilizando planos***
 
-    //A identificacão da escada será sobre o vetor de folhas contidas dentro do Bounding Box
-    void StairDetection();
-
-
-    vector<double> GetSpaceProperties();
+//    //A identificacão da escada será sobre o vetor de folhas contidas dentro do Bounding Box
+//    void StairDetection();
 
 
-    //Metodos para Transformada de Hough
-    vector<vector<double>> PlanesHoughTransform(double length, double width, double height);
+//    vector<double> GetSpaceProperties();
 
 
-    void InitializeAccumulator();
+//    //Metodos para Transformada de Hough
+//    vector<vector<double>> PlanesHoughTransform(double length, double width, double height);
 
 
-    void AccumulatePoint(OcTree::leaf_bbx_iterator p);
+//    void InitializeAccumulator();
 
 
-    vector<vector<double>> GetFilteredPlanes();
+//    void AccumulatePoint(OcTree::leaf_bbx_iterator p);
 
 
-
-    //Métodos para merge dos planos que são praticamente coplanares
-    vector<vector<double>> MergePlanes(vector<vector<double>> Planes);
-
-
-    bool CanMergePlanes(vector<double> PlaneA, vector<double> PlaneB);
-
-
-    vector<double> FitPlane(vector<double> PlaneA, vector<double> PlaneB);
+//    vector<vector<double>> GetFilteredPlanes();
 
 
 
-    //Método para agrupar os planos pelo (Theta e Phi)
-    vector<vector<vector<double>>> GroupPlanesByThetaPhi(vector<vector<double>> Planes);
+//    //Métodos para merge dos planos que são praticamente coplanares
+//    vector<vector<double>> MergePlanes(vector<vector<double>> Planes);
+
+
+//    bool CanMergePlanes(vector<double> PlaneA, vector<double> PlaneB);
+
+
+//    vector<double> FitPlane(vector<double> PlaneA, vector<double> PlaneB);
 
 
 
-    //Métodos referentes à criacão do Histograma (Necessário? Está funcionando somente como um filtro)
-    vector<vector<vector<double>>> GenerateHistogram(vector<vector<vector<double>>> SameAnglesPlanes);
-
-
-    //Metodo para extracao dos planos que passaram pelo filtro do histograma
-    vector<vector<vector<double>>> ExtractValidPlanes(map<vector<vector<double>>, double> Planes_Dist_Map);
-
-
-    //Método de filtro do conjunto de planos
-    vector<vector<vector<double>>> FilterGroups(vector<vector<vector<double>>> Groups_Planes);
-
-
-    //Método que verifica se há uma sequência
-    bool VerifySequence(vector<vector<double>> Group_Planes);
+//    //Método para agrupar os planos pelo (Theta e Phi)
+//    vector<vector<vector<double>>> GroupPlanesByThetaPhi(vector<vector<double>> Planes);
 
 
 
-    vector<Stair*> StairCandidatesDetection(vector<vector<vector<double>>> Grouped_Planes);
+//    //Métodos referentes à criacão do Histograma (Necessário? Está funcionando somente como um filtro)
+//    vector<vector<vector<double>>> GenerateHistogram(vector<vector<vector<double>>> SameAnglesPlanes);
 
 
-    void CleanStairsLeafs(vector<Stair*>& Detected_Stair_Candidates);
+//    //Metodo para extracao dos planos que passaram pelo filtro do histograma
+//    vector<vector<vector<double>>> ExtractValidPlanes(map<vector<vector<double>>, double> Planes_Dist_Map);
 
 
-    vector<Stair*> CleanStairSteps(vector<Stair*>& Detected_Stair_Candidates);
+//    //Método de filtro do conjunto de planos
+//    vector<vector<vector<double>>> FilterGroups(vector<vector<vector<double>>> Groups_Planes);
+
+
+//    //Método que verifica se há uma sequência
+//    bool VerifySequence(vector<vector<double>> Group_Planes);
+
+
+
+//    vector<Stair*> StairCandidatesDetection(vector<vector<vector<double>>> Grouped_Planes);
+
+
+//    void CleanStairsLeafs(vector<Stair*>& Detected_Stair_Candidates);
+
+
+//    vector<Stair*> CleanStairSteps(vector<Stair*>& Detected_Stair_Candidates);
 
 
     vector<Stair*> ModelStairs(vector<Stair*>& Stair_Candidates);
