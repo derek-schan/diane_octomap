@@ -97,7 +97,7 @@ void diane_octomap::DianeOctomap::InternalCycleProcedure()
 void diane_octomap::DianeOctomap::GenerateOcTreeFromFile()
 {
 //    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_5.ot";
-    string otFileName = "/home/rob/catkin_ws/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_5.ot";
+    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_5.ot";
 
     AbstractOcTree* abs_tree = AbstractOcTree::read(otFileName);
     if(abs_tree) // read error returns NULL
@@ -232,7 +232,6 @@ void diane_octomap::DianeOctomap::StairDetection2D()
 
     vector<vector<Line*>> Filtered_Sequence = SequenceFilter(Merged_Segmented_Groups);
 
-   compareStair(Filtered_Sequence.at(0) , Filtered_Sequence.at(1));
 
     //Obtendo os candidatos à escada
     vector<Stair*> StairCandidates = CreateStairCandidates(Filtered_Sequence);
@@ -1068,7 +1067,7 @@ vector<diane_octomap::Stair*> diane_octomap::DianeOctomap::CreateStairCandidates
 
 }
 
-void diane_octomap::DianeOctomap::compareStair(vector<Line*> list1, vector<Line*> list2)
+void diane_octomap::DianeOctomap::CompareStair(vector<Line*> list1, vector<Line*> list2)
 {
     vector<OcTree::leaf_bbx_iterator> Leafs1;
     vector<OcTree::leaf_bbx_iterator> Leafs2;
