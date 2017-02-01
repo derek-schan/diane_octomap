@@ -319,7 +319,6 @@ public:
 
     diane_octomap::Line* FitLine(Line* LineA, Line* LineB);
 
-
     vector<Line*> SortGroupLines(vector<Line*> GroupLines);
 
 
@@ -328,6 +327,7 @@ public:
 
     bool VerifyLineSequence(vector<Line*> Group_Lines);
 
+    void compareStair(vector<Line*> list1, vector<Line*> list2);
 
     //Criando os objetos dos candidatos de escada
     vector<Stair*> CreateStairCandidates(vector<vector<Line*>> Sequenced_Groups);
