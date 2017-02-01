@@ -22,11 +22,15 @@
 #include <octomap/OcTree.h>
 #include <octomap_msgs/Octomap.h>
 
+#include <eigen3/Eigen/Eigen>
+
 
 using std::vector;
+using namespace Eigen;
 
 using namespace octomap;
 using namespace std;
+
 
 namespace diane_octomap {
 
@@ -195,6 +199,9 @@ protected:
     double Octree_Resolution;
 
     vector<OcTree::leaf_bbx_iterator> OccupiedLeafsInBBX;
+
+    MatrixXf OccupiedPoints;
+
 
     //Variáveis referentes à Transformada de Hough
     double Rho_Min;

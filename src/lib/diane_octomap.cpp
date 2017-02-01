@@ -33,6 +33,8 @@ diane_octomap::DianeOctomap::DianeOctomap()
     Max_Step_Width = 0.35;
     Min_Step_Height = 0.09;
     Max_Step_Height = 0.20;
+
+    OccupiedPoints = MatrixXf();
 }
 
 
@@ -152,12 +154,18 @@ void diane_octomap::DianeOctomap::GetOccupiedLeafsOfBBX(OcTree* octree)
     point3d min;
     min.x() = -5;
     min.y() = -5;
-    min.z() = 0;
+    min.z() = -5;
 
     point3d max;
     max.x() = 5;
     max.y() = 100;
     max.z() = 100;
+
+
+    OccupiedPoints.resize(3, octree->getNumLeafNodes());
+
+    int Occupied_Points_Count = 0;
+
 
     //Armazenando somente as folhas pertencentes à Bounding Box e que estejam ocupadas.
     for(OcTree::leaf_bbx_iterator bbx_it = octree->begin_leafs_bbx(min, max), end=octree->end_leafs_bbx(); bbx_it!= end; ++bbx_it)
@@ -165,8 +173,18 @@ void diane_octomap::DianeOctomap::GetOccupiedLeafsOfBBX(OcTree* octree)
         if(octree->isNodeOccupied(*bbx_it))
         {
             OccupiedLeafsInBBX.push_back(bbx_it);
+
+            //Populando a Matriz que armazenará os pontos
+            OccupiedPoints(0, Occupied_Points_Count) = bbx_it.getX();
+            OccupiedPoints(1, Occupied_Points_Count) = bbx_it.getY();
+            OccupiedPoints(2, Occupied_Points_Count) = bbx_it.getZ();
+
+            ++Occupied_Points_Count;
+
         }
     }
+
+    OccupiedPoints.resize(3, Occupied_Points_Count);
 
     cout << "Folhas ocupadas: " << OccupiedLeafsInBBX.size() << endl << endl;
 
@@ -237,7 +255,7 @@ void diane_octomap::DianeOctomap::StairDetection2D()
     vector<Stair*> StairCandidates = CreateStairCandidates(Filtered_Sequence);
 
 
-    WriteStairCandidateToFile(StairCandidates.at(1));
+//    WriteStairCandidateToFile(StairCandidates.at(1));
 
 
     //***Modelando cada candidato à escada (obtendo o comprimento, largura e altura média dos degraus, a aresta inicial e os pontos de arestas referentes aos outros degraus)
