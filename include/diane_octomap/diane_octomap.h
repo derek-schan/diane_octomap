@@ -78,6 +78,8 @@ public:
 
     vector<double> Step_Plane;
 
+    Line* Step_Line;
+
     //Características padrões
     double Min_Step_Height;
     double Max_Step_Height;
@@ -300,11 +302,7 @@ public:
     void PopulateLines(vector<Line*>& Merged_Lines, vector<vector<OcTree::leaf_bbx_iterator>> Leaf_Groups);
 
     //Seperando as retas como segmento de reta
-    vector<Line*> segLine(vector<Line*> Lines);
-
-    vector<vector<Line*>> SequenceFilter(vector<vector<Line*>> lines);
-
-    bool VerifyLineSequence(vector<Line*> Group_Lines);
+    vector<Line*> SegmentLines(vector<Line*> Lines);
 
 
     //Agrupando os segmentos de linhas que possuírem o mesmo Theta e que possuírem o intervalo aceitável
@@ -322,6 +320,16 @@ public:
 
 
     vector<Line*> SortGroupLines(vector<Line*> GroupLines);
+
+
+    //Buscando sequências nos grupos de linhas
+    vector<vector<Line*>> SequenceFilter(vector<vector<Line*>> lines);
+
+    bool VerifyLineSequence(vector<Line*> Group_Lines);
+
+
+    //Criando os objetos dos candidatos de escada
+    vector<Stair*> CreateStairCandidates(vector<vector<Line*>> Sequenced_Groups);
 
 
     ///*** Fim da Lógica utilizando retas***

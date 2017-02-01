@@ -96,8 +96,8 @@ void diane_octomap::DianeOctomap::InternalCycleProcedure()
 
 void diane_octomap::DianeOctomap::GenerateOcTreeFromFile()
 {
-    string otFileName = "/home/rob/catkin_ws/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_5.ot";
-//    string otFileName = "/home/rob/catkin_ws/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_5.ot";
+    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_5.ot";
+//    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_5.ot";
 
     AbstractOcTree* abs_tree = AbstractOcTree::read(otFileName);
     if(abs_tree) // read error returns NULL
@@ -217,7 +217,7 @@ void diane_octomap::DianeOctomap::StairDetection2d()
     PopulateLines(Merged_Lines, Grouped_Leafs);
 
     //Segmentando as linhas
-    vector<diane_octomap::Line*> Segmented_Lines = segLine(Merged_Lines);
+    vector<diane_octomap::Line*> Segmented_Lines = SegmentLines(Merged_Lines);
 
 
     //Agrupando as linhas por Theta e pelo intervalo do segmento
@@ -241,6 +241,15 @@ void diane_octomap::DianeOctomap::StairDetection2d()
     //Busca uma sequência válida que seria referente à uma escada
 
     vector<vector<Line*>> Filtered_Sequence = SequenceFilter(Merged_Segmented_Groups);
+
+
+    //Obtendo os candidatos à escada
+    vector<Stair*> StairCandidates = CreateStairCandidates(Filtered_Sequence);
+
+
+    //***Modelando cada candidato à escada (obtendo o comprimento, largura e altura média dos degraus, a aresta inicial e os pontos de arestas referentes aos outros degraus)
+    vector<Stair*> Modeled_Stairs = ModelStairs(StairCandidates);
+
 
     cout<<endl;
 
@@ -586,7 +595,7 @@ void diane_octomap::DianeOctomap::PopulateLines(vector<diane_octomap::Line*>& Me
 
 }
 
-vector<diane_octomap::Line*> diane_octomap::DianeOctomap::segLine(vector<Line*> Lines)
+vector<diane_octomap::Line*> diane_octomap::DianeOctomap::SegmentLines(vector<Line*> Lines)
 {
     vector<diane_octomap::Line*> newLine;
     bool create_newline = false;
@@ -650,7 +659,7 @@ vector<diane_octomap::Line*> diane_octomap::DianeOctomap::segLine(vector<Line*> 
     {
         newLine.push_back(Lines.at(k));
     }
-    if(create_newline){newLine=segLine(newLine);}
+    if(create_newline){newLine = SegmentLines(newLine);}
     return newLine;
 
 
@@ -1021,6 +1030,43 @@ bool diane_octomap::DianeOctomap::VerifyLineSequence(vector<Line*> Group_Lines)
 }
 
 
+vector<diane_octomap::Stair*> diane_octomap::DianeOctomap::CreateStairCandidates(vector<vector<diane_octomap::Line*>> Sequenced_Groups)
+{
+    vector<Stair*> StairCandidates;
+
+    for(int i=0; i<Sequenced_Groups.size(); i++)
+    {
+        vector<Line*> Grouped_Lines = Sequenced_Groups.at(i);
+
+        Stair* NewStair = new Stair();
+
+        for(int j=0; j<Grouped_Lines.size(); j++)
+        {
+            Line* line = Grouped_Lines.at(j);
+
+            Step* NewStep = new Step();
+
+            //Repassando as folhas do objeto Line para o objeto Degrau
+            for(int k=0; k<line->Leafs_In_Line.size(); k++)
+            {
+                OcTree::leaf_bbx_iterator leaf = line->Leafs_In_Line.at(k);
+
+                NewStep->Leafs_In_Step.push_back(leaf);
+            }
+
+            NewStep->Step_Line = line;
+
+            NewStair->Steps.push_back(NewStep);
+
+        }
+
+        StairCandidates.push_back(NewStair);
+
+    }
+
+    return StairCandidates;
+
+}
 
 
 
@@ -2319,7 +2365,7 @@ void diane_octomap::Stair::ExtractLeafsFromSteps()
         {
             OcTree::leaf_bbx_iterator leaf = step->Leafs_In_Step.at(j);
 
-            //Verificando se a folha ja faz parte das folhas da escada. Se não fizer, atualiza as informacões da escada
+            //Verificando se a folha ja faz parte das folhas da escada. Se não fizer, adiciona essa folha na escada
             if((find(Leafs_In_Stair.begin(), Leafs_In_Stair.end(), leaf) != Leafs_In_Stair.end()) == false)
             {
                 Leafs_In_Stair.push_back(leaf);
@@ -2371,7 +2417,7 @@ void diane_octomap::Stair::ModelStair(double Octree_Resolution)
 
 
 
-    //Calulando o centróide do primeiro degrau
+    //Calculando o centróide do primeiro degrau
     double X_Sum = 0.0;
     double Y_Sum = 0.0;
     double Z_Sum = 0.0;
@@ -2579,6 +2625,231 @@ void diane_octomap::Stair::ModelStair(double Octree_Resolution)
 }
 
 
+void diane_octomap::Stair::ModelStair2D(double Octree_Resolution)
+{
+    //***Obtendo a altura da escada e a altura media dos degraus dessa escada (O candidato com 4 degraus - o primeiro degrau não passou pelos filtros - está gerando uma altura errada)
+    Total_Height = ((Max_Z + Octree_Resolution/2) - (Min_Z - Octree_Resolution/2));
+    Step_Height = Total_Height/Num_Steps;
+
+
+    //***Obtendo a largura (aproximada) da escada e a largura média de cada degrau
+    //***Obter o centróide do primeiro degrau (estará muito próximo da face mais externa) e calcular a distância até o plano do último degrau (estará próximo ao final)
+    Step* First_Step = Steps.at(0);
+    Step* Last_Step = Steps.back();
+
+    vector<double> First_Step_Centroid;
+    First_Step_Centroid.clear();
+
+    vector<double> Last_Plane_Param = Last_Step->Step_Plane;
+
+
+
+    //Calculando o centróide do primeiro degrau
+    double X_Sum = 0.0;
+    double Y_Sum = 0.0;
+    double Z_Sum = 0.0;
+
+    for(int i=0; i<First_Step->Leafs_In_Step.size(); i++)
+    {
+        X_Sum = X_Sum + First_Step->Leafs_In_Step.at(i).getX();
+        Y_Sum = Y_Sum + First_Step->Leafs_In_Step.at(i).getY();
+        Z_Sum = Z_Sum + First_Step->Leafs_In_Step.at(i).getZ();
+    }
+
+    First_Step_Centroid.push_back((X_Sum)/First_Step->Leafs_In_Step.size());
+    First_Step_Centroid.push_back((Y_Sum)/First_Step->Leafs_In_Step.size());
+    First_Step_Centroid.push_back((Z_Sum)/First_Step->Leafs_In_Step.size());
+
+    //Obtendo a distância do centróide até o plano do último degrau
+    double rho = Last_Plane_Param.at(0);
+    double theta = Last_Plane_Param.at(1) * (M_PI/180);
+    double phi = Last_Plane_Param.at(2) * (M_PI/180);
+
+
+    //Definindo a normal do plano do último degrau
+    double n[3];
+    n[0] = cos(theta)*sin(phi);
+    n[1] = sin(theta)*sin(phi);
+    n[2] = cos(phi);
+
+    double First_Centroid_Rho = First_Step_Centroid.at(0) * n[0] + First_Step_Centroid.at(1) * n[1] + First_Step_Centroid.at(2) * n[2];
+
+    double Partial_Width = abs(First_Centroid_Rho - rho);
+    Step_Width = Partial_Width/(Num_Steps - 1);
+    Total_Width = Step_Width*Num_Steps; //Desconsiderando que o último degrau terá uma largura maior
+
+
+
+
+    //Obtendo o par de pontos (1 do 1o degrau e 1 do último degrau) que possuem a maior distância entre si
+    //Essa distância será considerada a diagonal total da escada. Projetar os pontos no z=0. Projetar um dos dois pontos para o plano do outro (paralelo ao plano encontrado)
+    //A distância resultante será o comprimento da escada
+
+    //Obtendo o par que possui a maior distância entre si
+    vector<vector<double>> Selected_Points;
+
+    double Points_Distance = 0.0;
+
+    for(int i=0; i<First_Step->Leafs_In_Step.size(); i++)
+    {
+        OcTree::leaf_bbx_iterator First_Leaf = First_Step->Leafs_In_Step.at(i);
+        double First_X = First_Leaf.getX();
+        double First_Y = First_Leaf.getY();
+        double First_Z = First_Leaf.getZ();
+
+        vector<double> First_Point;
+        First_Point.push_back(First_X);
+        First_Point.push_back(First_Y);
+        First_Point.push_back(First_Z);
+
+        for(int j=0; j<Last_Step->Leafs_In_Step.size(); j++)
+        {
+            OcTree::leaf_bbx_iterator Last_Leaf = Last_Step->Leafs_In_Step.at(j);
+            double Last_X = Last_Leaf.getX();
+            double Last_Y = Last_Leaf.getY();
+            double Last_Z = Last_Leaf.getZ();
+
+            vector<double> Last_Point;
+            Last_Point.push_back(Last_X);
+            Last_Point.push_back(Last_Y);
+            Last_Point.push_back(Last_Z);
+
+            double New_Distance = sqrt(pow((Last_X - First_X), 2) + pow((Last_Y - First_Y), 2) + pow((Last_Z - First_Z), 2));
+
+            if(New_Distance > Points_Distance)
+            {
+                Selected_Points.clear();
+                Selected_Points.push_back(First_Point);
+                Selected_Points.push_back(Last_Point);
+
+                Points_Distance = New_Distance;
+            }
+
+        }
+
+    }
+
+    //Projetando os dois pontos no plano que passa pela centróide do primeiro degrau
+    double First_Point_Rho = Selected_Points.at(0).at(0) * n[0] + Selected_Points.at(0).at(1) * n[1] + Selected_Points.at(0).at(2) * n[2];
+    double First_Dist = abs(First_Point_Rho - First_Centroid_Rho);
+
+    vector<double> First_Projection_Centroid_Vector;
+    First_Projection_Centroid_Vector.push_back(First_Dist * n[0]);
+    First_Projection_Centroid_Vector.push_back(First_Dist * n[1]);
+    First_Projection_Centroid_Vector.push_back(First_Dist * n[2]);
+
+
+    vector<double> First_Projected_Centroid_Point;
+    First_Projected_Centroid_Point.push_back(Selected_Points.at(0).at(0) - First_Projection_Centroid_Vector.at(0));
+    First_Projected_Centroid_Point.push_back(Selected_Points.at(0).at(1) - First_Projection_Centroid_Vector.at(1));
+    First_Projected_Centroid_Point.push_back(Selected_Points.at(0).at(2) - First_Projection_Centroid_Vector.at(2));
+
+
+    double Last_Point_Rho = Selected_Points.at(1).at(0) * n[0] + Selected_Points.at(1).at(1) * n[1] + Selected_Points.at(1).at(2) * n[2];
+    double Last_Dist = abs(Last_Point_Rho - First_Centroid_Rho);
+
+    vector<double> Last_Projection_Centroid_Vector;
+    Last_Projection_Centroid_Vector.push_back(Last_Dist * n[0]);
+    Last_Projection_Centroid_Vector.push_back(Last_Dist * n[1]);
+    Last_Projection_Centroid_Vector.push_back(Last_Dist * n[2]);
+
+
+    vector<double> Last_Projected_Centroid_Point;
+    Last_Projected_Centroid_Point.push_back(Selected_Points.at(1).at(0) - Last_Projection_Centroid_Vector.at(0));
+    Last_Projected_Centroid_Point.push_back(Selected_Points.at(1).at(1) - Last_Projection_Centroid_Vector.at(1));
+    Last_Projected_Centroid_Point.push_back(Selected_Points.at(1).at(2) - Last_Projection_Centroid_Vector.at(2));
+
+
+    //Projetando os dois pontos resultantes no plano horizontal do menor nível detectado de escada (subtraindo metade da resolucao para chegar teoricamente ao chão)
+    double n_min[3];
+    n_min[0] = 0;
+    n_min[1] = 0;
+    n_min[2] = 1;
+
+    double First_Projected_Point_Rho = First_Projected_Centroid_Point.at(0) * n_min[0] + First_Projected_Centroid_Point.at(1) * n_min[1] + First_Projected_Centroid_Point.at(2) * n_min[2];
+    double First_Min_Dist = abs(First_Projected_Point_Rho - (Min_Z - Octree_Resolution/2));
+
+    vector<double> First_Projection_Vector;
+    First_Projection_Vector.push_back(First_Min_Dist * n_min[0]);
+    First_Projection_Vector.push_back(First_Min_Dist * n_min[1]);
+    First_Projection_Vector.push_back(First_Min_Dist * n_min[2]);
+
+
+    vector<double> First_Projected_Point;
+    First_Projected_Point.push_back(First_Projected_Centroid_Point.at(0) - First_Projection_Vector.at(0));
+    First_Projected_Point.push_back(First_Projected_Centroid_Point.at(1) - First_Projection_Vector.at(1));
+    First_Projected_Point.push_back(First_Projected_Centroid_Point.at(2) - First_Projection_Vector.at(2));
+
+
+    double Last_Projected_Point_Rho = Last_Projected_Centroid_Point.at(0) * n_min[0] + Last_Projected_Centroid_Point.at(1) * n_min[1] + Last_Projected_Centroid_Point.at(2) * n_min[2];
+    double Last_Min_Dist = abs(Last_Projected_Point_Rho - (Min_Z - Octree_Resolution/2));
+
+    vector<double> Last_Projection_Vector;
+    Last_Projection_Vector.push_back(Last_Min_Dist * n_min[0]);
+    Last_Projection_Vector.push_back(Last_Min_Dist * n_min[1]);
+    Last_Projection_Vector.push_back(Last_Min_Dist * n_min[2]);
+
+
+    vector<double> Last_Projected_Point;
+    Last_Projected_Point.push_back(Last_Projected_Centroid_Point.at(0) - Last_Projection_Vector.at(0));
+    Last_Projected_Point.push_back(Last_Projected_Centroid_Point.at(1) - Last_Projection_Vector.at(1));
+    Last_Projected_Point.push_back(Last_Projected_Centroid_Point.at(2) - Last_Projection_Vector.at(2));
+
+
+    //Calculando o comprimento da escada e definindo a aresta inicial (inferior do 1o degrau)
+    Total_Length = sqrt(pow(abs(First_Projected_Point.at(0) - Last_Projected_Point.at(0)), 2) + pow(abs(First_Projected_Point.at(1) - Last_Projected_Point.at(1)), 2));
+    Step_Length = Total_Length;
+
+    Aresta.push_back(First_Projected_Point);
+    Aresta.push_back(Last_Projected_Point);
+
+
+
+    //Encontrando a direcao para onde a largura deve ser adicionada
+    double n_dir[2];
+    n_dir[0] = cos(theta);
+    n_dir[1] = sin(theta);
+
+
+    //Calculando os pontos que definem a escada
+    vector<double> NewPointA = First_Projected_Point;
+    vector<double> NewPointB = Last_Projected_Point;
+
+    Points.push_back(NewPointA);
+    Points.push_back(NewPointB);
+
+    for(int i=0; i<Num_Steps; i++)
+    {
+        //Criando os pontos das quinas (somando a altura --- sempre em Z)
+        NewPointA.at(2) = NewPointA.at(2) + Step_Height;
+        NewPointB.at(2) = NewPointB.at(2) + Step_Height;
+
+        Points.push_back(NewPointA);
+        Points.push_back(NewPointB);
+
+        //Alterando o X e Y dos pontos para que se desloquem paralelamente ao plano
+        NewPointA.at(0) = NewPointA.at(0) + n_dir[0]*Step_Width;
+        NewPointA.at(1) = NewPointA.at(1) + n_dir[1]*Step_Width;
+
+        NewPointB.at(0) = NewPointB.at(0) + n_dir[0]*Step_Width;
+        NewPointB.at(1) = NewPointB.at(1) + n_dir[1]*Step_Width;
+
+        Points.push_back(NewPointA);
+        Points.push_back(NewPointB);
+
+    }
+
+
+
+    //Calculando a angulacão do plano da escada (em graus)
+    Plane_Alpha = atan(Step_Height/Step_Width) * (180/M_PI);
+    if(Plane_Alpha > 90)
+    {
+        Plane_Alpha = abs(180 - Plane_Alpha);
+    }
+
+
+}
 
 
 diane_octomap::Stair::~Stair()
