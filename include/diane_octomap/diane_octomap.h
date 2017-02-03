@@ -297,6 +297,8 @@ public:
     //Agrupando as folhas que possuem o mesmo Z (estão no mesmo nível) em grupos
     vector<vector<OcTree::leaf_bbx_iterator>> GroupPlanesByZ(vector<OcTree::leaf_bbx_iterator> Leafs);
 
+    vector<MatrixXf> GroupPlanesByZ(MatrixXf Leafs);
+
     //Obtendo a largura e comprimento do espaco definido pelas folhas
     vector<double> getParameter(vector<OcTree::leaf_bbx_iterator> Leafs);
 

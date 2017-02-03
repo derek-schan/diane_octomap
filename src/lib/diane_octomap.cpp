@@ -35,6 +35,7 @@ diane_octomap::DianeOctomap::DianeOctomap()
     Max_Step_Height = 0.20;
 
     OccupiedPoints = MatrixXf();
+
 }
 
 
@@ -99,7 +100,7 @@ void diane_octomap::DianeOctomap::InternalCycleProcedure()
 void diane_octomap::DianeOctomap::GenerateOcTreeFromFile()
 {
 //    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_5.ot";
-    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_5.ot";
+    string otFileName = "/home/rob/catkin_ws/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_5.ot";
 
     AbstractOcTree* abs_tree = AbstractOcTree::read(otFileName);
     if(abs_tree) // read error returns NULL
@@ -142,6 +143,7 @@ void diane_octomap::DianeOctomap::GenerateOcTreeFromFile()
             cout << "Número de nós ocupados: " << occupied_count << ".\n" << endl;
             cout << "Número de nós livres: " << free_count << ".\n" << endl;
             cout << "Número de nós totais: " << total_count << ".\n" << endl;
+            cout<< "Dk é gay"<<endl;
 
         }
 
@@ -163,7 +165,7 @@ void diane_octomap::DianeOctomap::GetOccupiedLeafsOfBBX(OcTree* octree)
     max.z() = 100;
 
 
-    OccupiedPoints.resize(3, octree->getNumLeafNodes());
+    OccupiedPoints.conservativeResize(3, octree->getNumLeafNodes());
 
     int Occupied_Points_Count = 0;
 
@@ -176,20 +178,73 @@ void diane_octomap::DianeOctomap::GetOccupiedLeafsOfBBX(OcTree* octree)
             OccupiedLeafsInBBX.push_back(bbx_it);
 
             //Populando a Matriz que armazenará os pontos
-            OccupiedPoints(0, Occupied_Points_Count) = bbx_it.getX();
-            OccupiedPoints(1, Occupied_Points_Count) = bbx_it.getY();
-            OccupiedPoints(2, Occupied_Points_Count) = bbx_it.getZ();
+            OccupiedPoints(0, Occupied_Points_Count) = (double)bbx_it.getX();
+            OccupiedPoints(1, Occupied_Points_Count) = (double)bbx_it.getY();
+            OccupiedPoints(2, Occupied_Points_Count) = (double)bbx_it.getZ();
 
             ++Occupied_Points_Count;
 
         }
     }
 
-    OccupiedPoints.resize(3, Occupied_Points_Count);
+    OccupiedPoints.conservativeResize(3, Occupied_Points_Count);
 
     cout << "Folhas ocupadas: " << OccupiedLeafsInBBX.size() << endl << endl;
 
 }
+
+//Fazendo com matriz
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+
+
+vector<MatrixXf> diane_octomap::DianeOctomap::GroupPlanesByZ(MatrixXf Leafs)
+{
+    vector<MatrixXf> Grouped2D;
+    for (int i = 0; i < Leafs.cols();++i)
+    {
+        bool group_not_found = true;
+        for (int j = 0; j<Grouped2D.size() ; ++j)
+        {
+
+            if(Grouped2D.at(j)(2,0) == Leafs(2,i))
+            {
+
+                Grouped2D.at(j).conservativeResize(3, Grouped2D.at(j).cols() +1);
+                Grouped2D.at(j)( 0 , Grouped2D.at(j).cols() - 1) = Leafs( 0 , i);
+                Grouped2D.at(j)( 1 , Grouped2D.at(j).cols() - 1) = Leafs( 1 , i);
+                Grouped2D.at(j)( 2 , Grouped2D.at(j).cols() - 1) = Leafs( 2 , i);
+                group_not_found = false;
+                break;
+            }
+        }
+        if(group_not_found)
+        {
+
+            MatrixXf newMatrix2d = MatrixXf(3, 1);
+            newMatrix2d(0,0) = Leafs( 0 , i );
+            newMatrix2d(1,0) = Leafs( 1 , i );
+            newMatrix2d(2,0) = Leafs( 2 , i ) ;
+            Grouped2D.push_back(newMatrix2d);
+        }
+    }
+
+
+    return Grouped2D;
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -205,6 +260,8 @@ void diane_octomap::DianeOctomap::StairDetection2D()
     vector<MatrixXf> Grouped_Leafs_In_Matrix;
 
     vector<vector<OcTree::leaf_bbx_iterator>> Grouped_Leafs = GroupPlanesByZ(OccupiedLeafsInBBX);
+
+    vector<MatrixXf> MatrixByZ= GroupPlanesByZ(OccupiedPoints);
 
     //Hough - encontrando as retas em cada altura em Z
     vector<double> parameter= diane_octomap::DianeOctomap::getParameter(OccupiedLeafsInBBX);
