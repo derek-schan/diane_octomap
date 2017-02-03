@@ -144,6 +144,7 @@ void diane_octomap::DianeOctomap::GenerateOcTreeFromFile()
             cout << "Número de nós totais: " << total_count << ".\n" << endl;
 
         }
+
     }
 
 }
@@ -201,6 +202,7 @@ void diane_octomap::DianeOctomap::GetOccupiedLeafsOfBBX(OcTree* octree)
 
 void diane_octomap::DianeOctomap::StairDetection2D()
 {
+    vector<MatrixXf> Grouped_Leafs_In_Matrix;
 
     vector<vector<OcTree::leaf_bbx_iterator>> Grouped_Leafs = GroupPlanesByZ(OccupiedLeafsInBBX);
 
@@ -223,10 +225,12 @@ void diane_octomap::DianeOctomap::StairDetection2D()
 
 
     PopulateLines(Merged_Lines, Grouped_Leafs);
+    PopulateLinesWithMatrix(Merged_Lines, Grouped_Leafs_In_Matrix);
+
 
     //Segmentando as linhas
     vector<diane_octomap::Line*> Segmented_Lines = SegmentLines(Merged_Lines);
-
+    vector<Line*> Segmented_Lines_With_Matrix = SegmentLinesWithMatrix(Merged_Lines);
 
     //Agrupando as linhas por Theta e pelo intervalo do segmento
     vector<vector<Line*>> GroupThetaIntervalLines = GroupLinesByThetaAndInterval(Segmented_Lines);
@@ -464,23 +468,25 @@ vector<diane_octomap::Line*> diane_octomap::DianeOctomap::createGroupLines(vecto
 vector<vector<diane_octomap::Line*>> diane_octomap::DianeOctomap::GroupLineByRhoTheta(vector<vector<diane_octomap::Line*>> Lines)
 {
     vector<vector<diane_octomap::Line*>>GroupedLineByTheta;
-    double theta;
-    double rho;
+
+    double Theta;
+    double Rho;
+
     //Separando os planos por Theta
 
     for(int i=0; i<Lines.size(); i++)
     {
         for (int k=0; k<Lines.at(i).size();k++)
         {
-             theta=Lines.at(i).at(k)->Line_Theta;
-             rho=Lines.at(i).at(k)->Line_Rho;
+             Theta = Lines.at(i).at(k)->Line_Theta;
+             Rho = Lines.at(i).at(k)->Line_Rho;
 
              bool Group_Found = false;
 
-             //Verificando se o theta já faz parte de um grupo
+             //Verificando se o Theta já faz parte de um grupo
              for(int j=0; j<GroupedLineByTheta.size(); j++)
              {
-                 if((theta == ((GroupedLineByTheta.at(j).at(0)->Line_Theta))) && (rho==GroupedLineByTheta.at(j).at(0)->Line_Rho))
+                 if((Theta == GroupedLineByTheta.at(j).at(0)->Line_Theta) && (Rho == GroupedLineByTheta.at(j).at(0)->Line_Rho))
                  {
                      GroupedLineByTheta.at(j).push_back(Lines.at(i).at(k));
 
@@ -508,13 +514,13 @@ vector<vector<diane_octomap::Line*>> diane_octomap::DianeOctomap::GroupLineByRho
 
 
 //Filtra os grupos no qual o numero de retas possam forma um degrau, no qual o max e min depende da resoluçao do octomap
-vector<vector<diane_octomap::Line*>> diane_octomap::DianeOctomap::FilterGroups(vector<vector<diane_octomap::Line*>> GroupLineByTheta, int min, int max)
+vector<vector<diane_octomap::Line*>> diane_octomap::DianeOctomap::FilterGroups(vector<vector<diane_octomap::Line*>> GroupLineByTheta, int Min_Size, int Max_Size)
 {
     vector<vector<diane_octomap::Line*>> FilterGroups;
 
-    for (int i=0;i<GroupLineByTheta.size();i++)
+    for (int i=0; i<GroupLineByTheta.size(); i++)
     {
-        if(GroupLineByTheta.at(i).size()>=min && GroupLineByTheta.at(i).size()<=max)
+        if((GroupLineByTheta.at(i).size() >= Min_Size) && (GroupLineByTheta.at(i).size() <= Max_Size))
         {
             FilterGroups.push_back(GroupLineByTheta.at(i));
         }
@@ -607,19 +613,92 @@ void diane_octomap::DianeOctomap::PopulateLines(vector<diane_octomap::Line*>& Me
 
 }
 
+
+void diane_octomap::DianeOctomap::PopulateLinesWithMatrix(vector<diane_octomap::Line*>& Merged_Lines, vector<MatrixXf> Leaf_Groups_In_Matrix)
+{
+    for(int i=0; i<Merged_Lines.size(); i++)
+    {
+        double Rho = Merged_Lines.at(i)->Line_Rho;
+        double Theta = Merged_Lines.at(i)->Line_Theta * (M_PI/180);
+        double ctheta=cos(Theta);
+        double stheta=sin(Theta);
+
+        for(int j=0; j<Leaf_Groups_In_Matrix.size(); j++)
+        {
+            MatrixXf Leaf_Group = Leaf_Groups_In_Matrix.at(i);
+
+            //Verificando se o Grupo de folhas está em um Z permitido pelo Line
+            if((Leaf_Group(2, 0)  >= Merged_Lines.at(i)->min_Z) && (Leaf_Group(2, 0)  <= Merged_Lines.at(i)->max_Z))
+            {
+                for(int k=0; k<Leaf_Group.cols(); k++)
+                {
+                    Vector3f Accessed_Leaf = Vector3f(3, 1);
+                    Accessed_Leaf(0, 0) = Leaf_Group(0, k);
+                    Accessed_Leaf(1, 0) = Leaf_Group(1, k);
+                    Accessed_Leaf(2, 0) = Leaf_Group(2, k);
+
+                    double Rho_Point = (Accessed_Leaf(0, 0)*ctheta + Accessed_Leaf(1, 0)*stheta);
+
+                    if(fabs(Rho_Point - Rho) <= Rho_Passo/2)
+                    {
+                        //Verificando se a folha já está na Line
+                        if((GroupContainsLeaf(Merged_Lines.at(i)->Leafs_Of_Line, Accessed_Leaf)) == false)
+                        {
+                            int Actual_Size = Merged_Lines.at(i)->Leafs_Of_Line.cols();
+                            Merged_Lines.at(i)->Leafs_Of_Line.resize(3, Actual_Size + 1);
+
+                            //Adicionando as informacoes da nova folha
+                            Merged_Lines.at(i)->Leafs_Of_Line(0, Actual_Size + 1) = Accessed_Leaf(0, 0);
+                            Merged_Lines.at(i)->Leafs_Of_Line(1, Actual_Size + 1) = Accessed_Leaf(1, 0);
+                            Merged_Lines.at(i)->Leafs_Of_Line(2, Actual_Size + 1) = Accessed_Leaf(2, 0);
+
+                        }
+
+                    }
+
+                }
+
+            }
+
+        }
+
+        //Após popular as folhas, atualiza os limites de X e de Z da linha
+        Merged_Lines.at(i)->UpdateLimitsWithMatrix();
+
+//        //Ordenando a matriz de folhas por X (para executar a segmentacão)
+//        Merged_Lines.at(i)->SortLeafMatrixByX();
+
+    }
+
+}
+
+
+bool diane_octomap::DianeOctomap::GroupContainsLeaf(MatrixXf Leaf_Group, Vector3f Leaf)
+{
+    auto find_row_X = (Leaf_Group.row(0).array() == Leaf[0]);
+    auto find_row_Y = (Leaf_Group.row(1).array() == Leaf[1]);
+    auto find_row_Z = (Leaf_Group.row(2).array() == Leaf[2]);
+
+    auto merge_result = find_row_X* find_row_Y * find_row_Z;
+
+    bool contains = merge_result.any();
+
+    return contains;
+}
+
+
+
 vector<diane_octomap::Line*> diane_octomap::DianeOctomap::SegmentLines(vector<Line*> Lines)
 {
-    vector<diane_octomap::Line*> newLine;
-    bool create_newline = false;
+    vector<diane_octomap::Line*> NewLines;
+    bool NewLine_break = false;
 
     int i;
-    for (i = 0;i<Lines.size();i++)
+    for (i = 0; i<Lines.size(); i++)
     {
         Line* line = Lines.at(i);
 
         double Tol_X = 0.11;
-
-        bool break_occ = false;
 
 
         for(int j = 0 ; j < line->Leafs_In_Line.size()-1; j++)
@@ -627,61 +706,183 @@ vector<diane_octomap::Line*> diane_octomap::DianeOctomap::SegmentLines(vector<Li
 
             if((fabs(line->Leafs_In_Line.at(j).getX() - line->Leafs_In_Line.at(j+1).getX())) > Tol_X)
             {
-                create_newline = true;
-                break_occ = true;
-                Line* newline1 = new Line();
-                Line* newline2 = new Line();
+                NewLine_break = true;
 
-                newline1->Line_Rho = line->Line_Rho;
-                newline1->Line_Theta = line->Line_Theta;
+                Line* NewLine1 = new Line();
+                Line* NewLine2 = new Line();
 
-                newline2->Line_Rho = line->Line_Rho;
-                newline2->Line_Theta = line->Line_Theta;
+                NewLine1->Line_Rho = line->Line_Rho;
+                NewLine1->Line_Theta = line->Line_Theta;
+
+                NewLine2->Line_Rho = line->Line_Rho;
+                NewLine2->Line_Theta = line->Line_Theta;
 
 
-                for(int k=0;k<=j;k++)
+                for(int k=0; k<=j; k++)
                 {
                     OcTree::leaf_bbx_iterator leaf = line->Leafs_In_Line.at(k);
-                    newline1->Leafs_In_Line.push_back(leaf);
+                    NewLine1->Leafs_In_Line.push_back(leaf);
                 }
 
-                for(int r=j+1;r<line->Leafs_In_Line.size();r++)
+                for(int r=j+1; r<line->Leafs_In_Line.size(); r++)
                 {
-                    newline2->Leafs_In_Line.push_back(line->Leafs_In_Line.at(r));
+                    NewLine2->Leafs_In_Line.push_back(line->Leafs_In_Line.at(r));
                 }
 
-                newline1->Line_Votes = newline1->Leafs_In_Line.size();
-                newline2->Line_Votes = newline2->Leafs_In_Line.size();
+                NewLine1->Line_Votes = NewLine1->Leafs_In_Line.size();
+                NewLine2->Line_Votes = NewLine2->Leafs_In_Line.size();
 
-                newline1->UpdateLimits();
-                newline2->UpdateLimits();
-                newLine.push_back(newline1);
-                newLine.push_back(newline2);
+                NewLine1->UpdateLimits();
+                NewLine2->UpdateLimits();
+
+                NewLines.push_back(NewLine1);
+                NewLines.push_back(NewLine2);
 
                 break;
             }
 
         }
 
-        if(break_occ) {break;}
-        newLine.push_back(Lines.at(i));
+        if(NewLine_break)
+        {
+            break;
+        }
 
+        NewLines.push_back(Lines.at(i));
 
     }
 
 
-    for(int k=i+1;k<Lines.size();k++)
+    for(int k=i+1; k<Lines.size(); k++)
     {
-        newLine.push_back(Lines.at(k));
+        NewLines.push_back(Lines.at(k));
     }
-    if(create_newline){newLine = SegmentLines(newLine);}
-    return newLine;
 
+    if(NewLine_break)
+    {
+        NewLines = SegmentLines(NewLines);
+    }
+
+    return NewLines;
 
 }
 
 
-//Agrupando as linhas que possuem o mesmo Theta e pelos limites de X
+vector<diane_octomap::Line*> diane_octomap::DianeOctomap::SegmentLinesWithMatrix(vector<Line*> Lines)
+{
+    vector<Line*> NewLines;
+    vector<Line*> TempLines;
+
+
+    bool NewLine_break = false;
+
+    int i;
+    for(i=0; i<Lines.size(); i++)
+    {
+        Line* Accessed_Line = Lines.at(i);
+
+        //Ordenando a matriz de folhas por X (para realizar a segmentacão)
+        Accessed_Line->SortLeafMatrixByX();
+
+
+        double Tolerance_X = 0.11;
+
+        //Para cada folha, verifica se a distância em X para a próxima ultrapassa a tolerância
+        for(int j=0; j<Accessed_Line->Leafs_Of_Line.cols() - 1; j++)
+        {
+            if((fabs(Accessed_Line->Leafs_Of_Line(0, j) - Accessed_Line->Leafs_Of_Line(0, j+1)) > Tolerance_X ))
+            {
+                NewLine_break = true;
+
+                Line* NewLine1 = new Line();
+                Line* NewLine2 = new Line();
+
+                NewLine1->Line_Rho = Accessed_Line->Line_Rho;
+                NewLine1->Line_Theta = Accessed_Line->Line_Theta;
+
+                NewLine2->Line_Rho = Accessed_Line->Line_Rho;
+                NewLine2->Line_Theta = Accessed_Line->Line_Theta;
+
+                //Armazenando as folhas do primeiro segmento na 1a linha nova
+                for(int k=0; k<=j; k++)
+                {
+                    int Actual_Size = NewLine1->Leafs_Of_Line.cols();
+                    NewLine1->Leafs_Of_Line.conservativeResize(3, Actual_Size + 1);
+
+                    NewLine1->Leafs_Of_Line(0, k) = Accessed_Line->Leafs_Of_Line(0, k);
+                    NewLine1->Leafs_Of_Line(1, k) = Accessed_Line->Leafs_Of_Line(1, k);
+                    NewLine1->Leafs_Of_Line(2, k) = Accessed_Line->Leafs_Of_Line(2, k);
+                }
+
+                //Armazenando as folhas restantes na 2a linha nova
+                for(int l=j+1; l<Accessed_Line->Leafs_Of_Line.cols(); l++)
+                {
+                    int Actual_Size = NewLine2->Leafs_Of_Line.cols();
+                    NewLine2->Leafs_Of_Line.conservativeResize(3, Actual_Size + 1);
+
+                    NewLine2->Leafs_Of_Line(0, Actual_Size) = Accessed_Line->Leafs_Of_Line(0, l);
+                    NewLine2->Leafs_Of_Line(1, Actual_Size) = Accessed_Line->Leafs_Of_Line(1, l);
+                    NewLine2->Leafs_Of_Line(2, Actual_Size) = Accessed_Line->Leafs_Of_Line(2, l);
+
+                }
+
+                //Atualizando os Votos
+                NewLine1->Line_Votes = NewLine1->Leafs_Of_Line.cols();
+                NewLine2->Line_Votes = NewLine2->Leafs_Of_Line.cols();
+
+                //Atualizando os limites
+                NewLine1->UpdateLimitsWithMatrix();
+                NewLine2->UpdateLimitsWithMatrix();
+
+                //Garantindo que estarão ordenados por X
+                NewLine1->SortLeafMatrixByX();
+                NewLine2->SortLeafMatrixByX();
+
+                TempLines.push_back(NewLine1);
+                TempLines.push_back(NewLine2);
+
+                break;
+
+            }
+
+        }
+
+        //Se ocorreu segmentacão para uma linha, interrompe o loop e chama a funcao recursiva novamente.
+        //Se não ocorreu para essa linha, verifica a próxima
+        if(NewLine_break)
+        {
+            break;
+        }
+        else
+        {
+            TempLines.push_back(Accessed_Line);
+        }
+
+    }
+
+    //Se ocorreu break, completa a lista com o resto dos Lines e chama a funcao novamente
+    if(NewLine_break)
+    {
+        for(int m=i+1; m<Lines.size(); m++)
+        {
+            TempLines.push_back(Lines.at(m));
+        }
+
+        NewLines = SegmentLinesWithMatrix(TempLines);
+
+    }
+    else
+    {
+        NewLines = TempLines;
+    }
+
+
+    return NewLines;
+
+}
+
+
+//Agrupando as linhas que possuem o mesmo Theta e limites de X (min_X e max_X)
 vector<vector<diane_octomap::Line*>> diane_octomap::DianeOctomap::GroupLinesByThetaAndInterval(vector<diane_octomap::Line*> Segmented_Lines)
 {
     vector<vector<Line*>> Groups_Lines;
@@ -781,7 +982,7 @@ vector<diane_octomap::Line*> diane_octomap::DianeOctomap::MergeSegmentedGroup(ve
     //Buscando dois Lines no grupo que possam fazer merge
     if(SegmentedGroupLines.size() > 0)
     {
-        //Para cada Line, verifica se cada um dos planos seguintes podem ser agrupados com o inicial
+        //Para cada Line, verifica se cada um dos Lines seguintes podem ser agrupados com o inicial
         for(i=0; i<SegmentedGroupLines.size() - 1; i++)
         {
             for(j=i+1; j<SegmentedGroupLines.size(); j++)
@@ -2987,6 +3188,62 @@ void diane_octomap::Line::sortLeafs()
         }
     }
 }
+
+
+void diane_octomap::Line::UpdateLimitsWithMatrix()
+{
+    if(Leafs_Of_Line.cols() > 0)
+    {
+        //Ordenando a matriz de folhas por X (para acessar o X mínimo e o X máximo)
+        SortLeafMatrixByX();
+
+        min_X = Leafs_Of_Line(0, 0);
+        max_X = Leafs_Of_Line(0, Leafs_Of_Line.cols() - 1);
+
+        //Ordenando a matriz de folhas por Z (para acessar o Z mínimo e o Z máximo)
+        SortLeafMatrixByZ();
+
+        min_Z = Leafs_Of_Line(2, 0);
+        max_Z = Leafs_Of_Line(2, Leafs_Of_Line.cols() - 1);
+
+    }
+
+}
+
+
+void diane_octomap::Line::SortLeafMatrixByX()
+{
+    //Obtendo a ordem dos índices ordenados pelo X das folhas
+    MatrixXi Indexes;
+    MatrixXf SortedMatrix;
+
+    igl::sort(Leafs_Of_Line.row(0), 2, true, SortedMatrix, Indexes);
+
+
+    igl::slice(Leafs_Of_Line.transpose(), Indexes, 1, SortedMatrix);
+    SortedMatrix.transposeInPlace();
+
+    Leafs_Of_Line = SortedMatrix;
+
+}
+
+
+void diane_octomap::Line::SortLeafMatrixByZ()
+{
+    //Obtendo a ordem dos índices ordenados pelo Z das folhas
+    MatrixXi Indexes;
+    MatrixXf SortedMatrix;
+
+    igl::sort(Leafs_Of_Line.row(2), 2, true, SortedMatrix, Indexes);
+
+
+    igl::slice(Leafs_Of_Line.transpose(), Indexes, 1, SortedMatrix);
+    SortedMatrix.transposeInPlace();
+
+    Leafs_Of_Line = SortedMatrix;
+
+}
+
 
 diane_octomap::Line::~Line()
 {

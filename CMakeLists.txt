@@ -5,6 +5,7 @@ project(diane_octomap)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 set(octomap_DIR /opt/ros/indigo/share/octomap)
+#set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}:./")
 
 find_package(catkin REQUIRED COMPONENTS
   nodelet
@@ -13,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   octomap
 )
 
+find_package(Eigen3 REQUIRED)
 
 
 ## System dependencies are found with CMake's conventions
@@ -123,6 +125,10 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
   ${nodelet_INCLUDE_DIRS}
   ${OCTOMAP_INCLUDE_DIRS}
+
+  ${EIGEN3_INCLUDE_DIR}
+
+  "/home/derekchan/Git/libigl/libigl/include"
 )
 
 ## Declare a C++ library

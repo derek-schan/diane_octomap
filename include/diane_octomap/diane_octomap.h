@@ -22,7 +22,10 @@
 #include <octomap/OcTree.h>
 #include <octomap_msgs/Octomap.h>
 
-#include <eigen3/Eigen/Eigen>
+#include <eigen3/Eigen/Core>
+
+#include "igl/sort.h"
+#include "igl/slice.h"
 
 
 using std::vector;
@@ -41,6 +44,7 @@ protected:
 
 public:
     vector<OcTree::leaf_bbx_iterator> Leafs_In_Line;
+    MatrixXf Leafs_Of_Line;
 
     double Line_Rho;
     double Line_Theta;
@@ -59,6 +63,14 @@ public:
     void sortLeafs();
 
     void UpdateLimits();
+
+
+    void SortLeafMatrixByX();
+
+    void SortLeafMatrixByZ();
+
+    void UpdateLimitsWithMatrix();
+
 
     virtual ~Line();
 
@@ -301,16 +313,24 @@ public:
     vector<vector<Line*>> GroupLineByRhoTheta(vector<vector<diane_octomap::Line*>> Lines);
 
     //Filtrando as retas que aparecem em muitos níveis de Z - provavelmente são paredes - ou que aparecem muitos poucos níveis de Z - provavelmente são ruídos)
-    vector<vector<Line*>> FilterGroups(vector<vector<diane_octomap::Line*>> GroupLineByTheta,int min, int max);
+    vector<vector<Line*>> FilterGroups(vector<vector<diane_octomap::Line*>> GroupLineByTheta, int Min_Size, int Max_Size);
 
     //Gerando um único objeto Line para cada grupo de Line's que possuem o mesmo Rho e Theta (armazenando o min_Z e o max_Z em que essa cada Line ocorre)
     vector<Line*> MergeGroupedLines(vector<vector<Line*>> GroupedLines);
 
     //Populando cada Line obtido com as folhas que possuam Z dentro dos limites e que estejam à uma distância mínima da reta
     void PopulateLines(vector<Line*>& Merged_Lines, vector<vector<OcTree::leaf_bbx_iterator>> Leaf_Groups);
+    void PopulateLinesWithMatrix(vector<Line*>& Merged_Lines, vector<MatrixXf> Leaf_Groups_In_Matrix);
+
+
+    //Funcao para verificar se existe uma folha dentro de um grupo de folhas
+    bool GroupContainsLeaf(MatrixXf Leaf_Group, Vector3f Leaf);
+
+
 
     //Seperando as retas como segmento de reta
     vector<Line*> SegmentLines(vector<Line*> Lines);
+    vector<Line*> SegmentLinesWithMatrix(vector<Line*> Lines);
 
 
     //Agrupando os segmentos de linhas que possuírem o mesmo Theta e que possuírem o intervalo aceitável
