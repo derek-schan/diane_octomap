@@ -289,15 +289,18 @@ public:
 
     //Obtendo a largura e comprimento do espaco definido pelas folhas
     vector<double> getParameter(vector<OcTree::leaf_bbx_iterator> Leafs);
+    vector<double> getParameter(MatrixXf Leafs);
 
     //Aplicando a Transformada de Hough para todos os níveis de Z, obtendo todas um grupo de grupo de retas (cada grupo de retas é referente à um nível de Z)
     vector<vector<Line*>> LineHoughTransform(double length, double width,vector<vector<OcTree::leaf_bbx_iterator>> Leafs);
+    vector<vector<Line*>> LineHoughTransform(double length, double width,vector<MatrixXf> Leafs);
 
     //Funcão que, para um determinado grupo de folhas, cria o acumulador, acumula os votos e extrai as retas desse grupo
     vector<vector<int>> AccumulatePoint2D(vector<OcTree::leaf_bbx_iterator> LeafZ);
+    vector<vector<int>> Accumulate2D(MatrixXf LeafZ);
 
     //Funcão que cria um grupo de objetos Line, referente às retas em um determinado nível de Z
-    vector<Line*> createGroupLines(vector<vector<int>>Votes, double Z);
+    vector<Line*> createGroupLines(vector<vector<int>>Votes, float Z);
 
     //Agrupando as linhas por Rho e Theta (para identificar as retas recorrentes em vários níveis de Z)
     vector<vector<Line*>> GroupLineByRhoTheta(vector<vector<diane_octomap::Line*>> Lines);

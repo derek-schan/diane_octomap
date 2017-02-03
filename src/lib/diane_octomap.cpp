@@ -235,14 +235,124 @@ vector<MatrixXf> diane_octomap::DianeOctomap::GroupPlanesByZ(MatrixXf Leafs)
 
 
 
+vector<double> diane_octomap::DianeOctomap::getParameter(MatrixXf Leafs)
+    {
+     double max_x, min_x,max_y,min_y;
+
+        for(int i = 0; i < Leafs.cols() ; i++)
+        {
+
+            if(Leafs( 0 , i ) < min_x)
+            {
+                min_x = Leafs( 0 , i );
+            }
+            if(Leafs( 0 , i ) > max_x)
+            {
+                 max_x = Leafs( 0 , i );
+            }
+
+            if(Leafs( 1 , i ) < min_y)
+            {
+                min_y = Leafs( 1 , i );
+            }
+            if(Leafs( 1 , i ) > max_y)
+            {
+                max_y = Leafs( 1 , i );
+            }
+
+        }
+
+    double length = max_x - min_x;
+    double width = max_y - min_y;
+    vector<double> result;
+    result.push_back(length);
+    result.push_back(width);
+
+    return result;
+
+}
+
+
+vector<vector<diane_octomap::Line*>> diane_octomap::DianeOctomap::LineHoughTransform(double length, double width, vector<MatrixXf> Leafs)
+{
+
+    vector<vector<Line*>> Group_Lines;
+
+    //Parametros que serao usados para criar o espaço de Hough
+    Rho_Min = 0;
+    Rho_Max = ceil(sqrt(pow(length, 2) + pow(width, 2)));
+    Theta_Min = 0;
+    Theta_Max = 360;
+
+    Rho_Passo = 0.05;
+    Theta_Passo = 1;
+
+    Rho_Num = (Rho_Max - Rho_Min)/Rho_Passo;
+    Theta_Num = (Theta_Max - Theta_Min)/Theta_Passo;
+
+    for (int i=0 ;i < Leafs.size() ; i++)
+    {
+
+        vector<vector<int>> Votes = Accumulate2D(Leafs.at(i));
+
+        vector<Line*> Lines = createGroupLines(Votes, Leafs.at(i)(2,0));
+
+        Group_Lines.push_back(Lines);
+    }
+
+    return Group_Lines;
+
+}
+
+
+vector<vector<int>> diane_octomap::DianeOctomap::Accumulate2D(MatrixXf LeafZ)
+{
+    vector<vector<int>> Accumulate2d;
+    vector<int> addAccumulate;
+    bool add=false;
+
+    //Cria o espaço de Hough
+    for (int j = 0 ; j < Rho_Num ; j++)
+    {
+
+        if(add==false)
+        {
+            for(int k=0 ; k < Theta_Num ; k++)
+            {
+                addAccumulate.push_back(0);
+            }
+            add=true;
+        }
+
+        Accumulate2d.push_back(addAccumulate);
+
+    }
+    //Faz a votaçao
+    for (int k = 0 ;k < Theta_Num ; k++)
+    {
+        float Theta =(Theta_Min+k*Theta_Passo+Theta_Passo/2) * (M_PI/180);
+        float ctheta=cos(Theta);
+        float stheta=sin(Theta);
+        for(int j=0;j < Rho_Num;j++)
+        {
+            float Rho=(Rho_Min+(j+0.5)*Rho_Passo);
+            for (int l=0;l<LeafZ.cols();l++)
+            {
+                float Rho_point = LeafZ( 0 , l )*ctheta + LeafZ( 1 , l )*stheta;
+
+                if (fabs(Rho_point-Rho)<=Rho_Passo/2)
+                {
+                    Accumulate2d.at(j).at(k)=Accumulate2d.at(j).at(k)+ 1;
+                }
+            }
+        }
 
 
 
+    }
 
-
-
-
-
+    return Accumulate2d;
+}
 
 
 
@@ -262,12 +372,12 @@ void diane_octomap::DianeOctomap::StairDetection2D()
     vector<MatrixXf> MatrixByZ= GroupPlanesByZ(OccupiedPoints);
 
     //Hough - encontrando as retas em cada altura em Z
-    vector<double> parameter= diane_octomap::DianeOctomap::getParameter(OccupiedLeafsInBBX);
+    vector<double> parameter= diane_octomap::DianeOctomap::getParameter(OccupiedPoints);
+    float length = parameter.at(0);
+    float width = parameter.at(1);
 
-    double length = parameter.at(0);
-    double width = parameter.at(1);
-
-    vector<vector<diane_octomap::Line*>> Lines = LineHoughTransform(length, width, Grouped_Leafs);
+    vector<vector<diane_octomap::Line*>> Lines1 = LineHoughTransform(length, width, Grouped_Leafs);
+    vector<vector<diane_octomap::Line*>> Lines = LineHoughTransform(length, width, MatrixByZ);
 
 
     vector<vector<diane_octomap::Line*>> GroupLinesByRhoTheta = GroupLineByRhoTheta(Lines);
@@ -493,7 +603,7 @@ vector<vector<int>> diane_octomap::DianeOctomap::AccumulatePoint2D(vector<OcTree
 
 
 //Crias as retas olhando para a votaçao que foi feita, e retorna o grupo de todas elas.
-vector<diane_octomap::Line*> diane_octomap::DianeOctomap::createGroupLines(vector<vector<int>> Votes, double Z)
+vector<diane_octomap::Line*> diane_octomap::DianeOctomap::createGroupLines(vector<vector<int>> Votes, float Z)
 {
     vector<Line*> Lines;
 
