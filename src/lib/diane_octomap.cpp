@@ -100,7 +100,7 @@ void diane_octomap::DianeOctomap::InternalCycleProcedure()
 void diane_octomap::DianeOctomap::GenerateOcTreeFromFile()
 {
 //    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_5.ot";
-    string otFileName = "/home/rob/catkin_ws/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_5.ot";
+    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_5.ot";
 
     AbstractOcTree* abs_tree = AbstractOcTree::read(otFileName);
     if(abs_tree) // read error returns NULL
@@ -143,7 +143,6 @@ void diane_octomap::DianeOctomap::GenerateOcTreeFromFile()
             cout << "Número de nós ocupados: " << occupied_count << ".\n" << endl;
             cout << "Número de nós livres: " << free_count << ".\n" << endl;
             cout << "Número de nós totais: " << total_count << ".\n" << endl;
-            cout<< "Dk é gay"<<endl;
 
         }
 
@@ -257,11 +256,9 @@ vector<MatrixXf> diane_octomap::DianeOctomap::GroupPlanesByZ(MatrixXf Leafs)
 
 void diane_octomap::DianeOctomap::StairDetection2D()
 {
-    vector<MatrixXf> Grouped_Leafs_In_Matrix;
-
     vector<vector<OcTree::leaf_bbx_iterator>> Grouped_Leafs = GroupPlanesByZ(OccupiedLeafsInBBX);
+    vector<MatrixXf> Grouped_Leafs_In_Matrix= GroupPlanesByZ(OccupiedPoints);
 
-    vector<MatrixXf> MatrixByZ= GroupPlanesByZ(OccupiedPoints);
 
     //Hough - encontrando as retas em cada altura em Z
     vector<double> parameter= diane_octomap::DianeOctomap::getParameter(OccupiedLeafsInBBX);
@@ -269,7 +266,9 @@ void diane_octomap::DianeOctomap::StairDetection2D()
     double length = parameter.at(0);
     double width = parameter.at(1);
 
+
     vector<vector<diane_octomap::Line*>> Lines = LineHoughTransform(length, width, Grouped_Leafs);
+
 
 
     vector<vector<diane_octomap::Line*>> GroupLinesByRhoTheta = GroupLineByRhoTheta(Lines);
@@ -281,16 +280,16 @@ void diane_octomap::DianeOctomap::StairDetection2D()
     vector<diane_octomap::Line*> Merged_Lines = MergeGroupedLines(Filtered_Groups);
 
 
-    PopulateLines(Merged_Lines, Grouped_Leafs);
+//    PopulateLines(Merged_Lines, Grouped_Leafs);
     PopulateLinesWithMatrix(Merged_Lines, Grouped_Leafs_In_Matrix);
 
 
     //Segmentando as linhas
-    vector<diane_octomap::Line*> Segmented_Lines = SegmentLines(Merged_Lines);
+//    vector<diane_octomap::Line*> Segmented_Lines = SegmentLines(Merged_Lines);
     vector<Line*> Segmented_Lines_With_Matrix = SegmentLinesWithMatrix(Merged_Lines);
 
     //Agrupando as linhas por Theta e pelo intervalo do segmento
-    vector<vector<Line*>> GroupThetaIntervalLines = GroupLinesByThetaAndInterval(Segmented_Lines);
+    vector<vector<Line*>> GroupThetaIntervalLines = GroupLinesByThetaAndInterval(Segmented_Lines_With_Matrix);
 
 
     //Filtrando os grupos de linhas que não possuem elementos suficientes para formar degraus
@@ -320,7 +319,7 @@ void diane_octomap::DianeOctomap::StairDetection2D()
 
 
     //***Modelando cada candidato à escada (obtendo o comprimento, largura e altura média dos degraus, a aresta inicial e os pontos de arestas referentes aos outros degraus)
-    vector<Stair*> Modeled_Stairs = ModelStairs(StairCandidates);
+//    vector<Stair*> Modeled_Stairs = ModelStairs(StairCandidates);
 
 
 
@@ -682,7 +681,7 @@ void diane_octomap::DianeOctomap::PopulateLinesWithMatrix(vector<diane_octomap::
 
         for(int j=0; j<Leaf_Groups_In_Matrix.size(); j++)
         {
-            MatrixXf Leaf_Group = Leaf_Groups_In_Matrix.at(i);
+            MatrixXf Leaf_Group = Leaf_Groups_In_Matrix.at(j);
 
             //Verificando se o Grupo de folhas está em um Z permitido pelo Line
             if((Leaf_Group(2, 0)  >= Merged_Lines.at(i)->min_Z) && (Leaf_Group(2, 0)  <= Merged_Lines.at(i)->max_Z))
@@ -698,18 +697,35 @@ void diane_octomap::DianeOctomap::PopulateLinesWithMatrix(vector<diane_octomap::
 
                     if(fabs(Rho_Point - Rho) <= Rho_Passo/2)
                     {
-                        //Verificando se a folha já está na Line
-                        if((GroupContainsLeaf(Merged_Lines.at(i)->Leafs_Of_Line, Accessed_Leaf)) == false)
+                        //Se a matriz estiver vazia, inclui a nova folha
+                        if(Merged_Lines.at(i)->Leafs_Of_Line.cols() == 0)
                         {
                             int Actual_Size = Merged_Lines.at(i)->Leafs_Of_Line.cols();
-                            Merged_Lines.at(i)->Leafs_Of_Line.resize(3, Actual_Size + 1);
+                            Merged_Lines.at(i)->Leafs_Of_Line.conservativeResize(3, Actual_Size + 1);
 
                             //Adicionando as informacoes da nova folha
-                            Merged_Lines.at(i)->Leafs_Of_Line(0, Actual_Size + 1) = Accessed_Leaf(0, 0);
-                            Merged_Lines.at(i)->Leafs_Of_Line(1, Actual_Size + 1) = Accessed_Leaf(1, 0);
-                            Merged_Lines.at(i)->Leafs_Of_Line(2, Actual_Size + 1) = Accessed_Leaf(2, 0);
+                            Merged_Lines.at(i)->Leafs_Of_Line(0, Actual_Size) = Accessed_Leaf(0, 0);
+                            Merged_Lines.at(i)->Leafs_Of_Line(1, Actual_Size) = Accessed_Leaf(1, 0);
+                            Merged_Lines.at(i)->Leafs_Of_Line(2, Actual_Size) = Accessed_Leaf(2, 0);
 
                         }
+                        else
+                        {
+                            //Se não estiver vazia, verifica se a folha já pertence à Matriz
+                            if((GroupContainsLeaf(Merged_Lines.at(i)->Leafs_Of_Line, Accessed_Leaf)) == false)
+                            {
+                                int Actual_Size = Merged_Lines.at(i)->Leafs_Of_Line.cols();
+                                Merged_Lines.at(i)->Leafs_Of_Line.conservativeResize(3, Actual_Size + 1);
+
+                                //Adicionando as informacoes da nova folha
+                                Merged_Lines.at(i)->Leafs_Of_Line(0, Actual_Size) = Accessed_Leaf(0, 0);
+                                Merged_Lines.at(i)->Leafs_Of_Line(1, Actual_Size) = Accessed_Leaf(1, 0);
+                                Merged_Lines.at(i)->Leafs_Of_Line(2, Actual_Size) = Accessed_Leaf(2, 0);
+
+                            }
+
+                        }
+
 
                     }
 
@@ -1047,7 +1063,8 @@ vector<diane_octomap::Line*> diane_octomap::DianeOctomap::MergeSegmentedGroup(ve
                 if(CanMergeLines(SegmentedGroupLines.at(i), SegmentedGroupLines.at(j)))
                 {
                     //Se dois Lines forem marcados como mergeable, executa o MergeSegmentedGroup de novo, repassando o novo SegmentedGroupLines (com o novo Line e sem os dois antigos)
-                    NewLine = FitLine(SegmentedGroupLines.at(i), SegmentedGroupLines.at(j));
+//                    NewLine = FitLine(SegmentedGroupLines.at(i), SegmentedGroupLines.at(j));
+                    NewLine = FitLineWithMatrix(SegmentedGroupLines.at(i), SegmentedGroupLines.at(j));
                     merge_break = true;
                     break;
                 }
@@ -1164,6 +1181,115 @@ diane_octomap::Line* diane_octomap::DianeOctomap::FitLine(diane_octomap::Line* L
 
     Result_Line->sortLeafs();
     Result_Line->UpdateLimits();
+
+
+    return Result_Line;
+
+}
+
+
+diane_octomap::Line* diane_octomap::DianeOctomap::FitLineWithMatrix(diane_octomap::Line* LineA, diane_octomap::Line* LineB)
+{
+    //Inicialmente, o Line resultante possuirá parâmetros RHO e THETA iguais às médias ponderadas dos parâmetros dos planos recebidos, onde o peso é a quantidade de votos.
+
+    Line* Result_Line = new Line();
+
+    double Rho = (LineA->Line_Rho * LineA->Line_Votes + LineB->Line_Rho * LineB->Line_Votes)/(LineA->Line_Votes + LineB->Line_Votes);
+    double Theta = (LineA->Line_Theta * LineA->Line_Votes + LineB->Line_Theta * LineB->Line_Votes)/(LineA->Line_Votes + LineB->Line_Votes);
+
+    if(Theta > 360)
+    {
+        Theta = remainder(Theta,360);
+    }
+
+    double Votes = (LineA->Line_Votes + LineB->Line_Votes);
+
+    Result_Line->Line_Rho = Rho;
+    Result_Line->Line_Theta = Theta;
+    Result_Line->Line_Votes = Votes;
+
+
+    //Repassando as folhas dos Lines antigos para o novo Line
+    for(int i=0; i<LineA->Leafs_Of_Line.cols(); i++)
+    {
+        Vector3f leafA = Vector3f(3, 1);
+        leafA(0, 0) = LineA->Leafs_Of_Line(0, i);
+        leafA(1, 0) = LineA->Leafs_Of_Line(1, i);
+        leafA(2, 0) = LineA->Leafs_Of_Line(2, i);
+
+        //Se estiver vazia, inclui a nova folha
+        if(Result_Line->Leafs_Of_Line.cols() == 0)
+        {
+            int Actual_Size = Result_Line->Leafs_Of_Line.cols();
+            Result_Line->Leafs_Of_Line.conservativeResize(3, Actual_Size + 1);
+
+            //Adicionando as informacoes da nova folha
+            Result_Line->Leafs_Of_Line(0, Actual_Size) = leafA(0, 0);
+            Result_Line->Leafs_Of_Line(1, Actual_Size) = leafA(1, 0);
+            Result_Line->Leafs_Of_Line(2, Actual_Size) = leafA(2, 0);
+
+        }
+        else
+        {
+            //Se não estiver vazia, verifica se a folha já pertence à Matriz
+            if((GroupContainsLeaf(Result_Line->Leafs_Of_Line, leafA)) == false)
+            {
+                int Actual_Size = Result_Line->Leafs_Of_Line.cols();
+                Result_Line->Leafs_Of_Line.conservativeResize(3, Actual_Size + 1);
+
+                //Adicionando as informacoes da nova folha
+                Result_Line->Leafs_Of_Line(0, Actual_Size) = leafA(0, 0);
+                Result_Line->Leafs_Of_Line(1, Actual_Size) = leafA(1, 0);
+                Result_Line->Leafs_Of_Line(2, Actual_Size) = leafA(2, 0);
+
+            }
+
+        }
+
+    }
+
+    for(int j=0; j<LineB->Leafs_Of_Line.cols(); j++)
+    {
+        Vector3f leafB = Vector3f(3, 1);
+        leafB(0, 0) = LineB->Leafs_Of_Line(0, j);
+        leafB(1, 0) = LineB->Leafs_Of_Line(1, j);
+        leafB(2, 0) = LineB->Leafs_Of_Line(2, j);
+
+        //Se estiver vazia, inclui a nova folha
+        if(Result_Line->Leafs_Of_Line.cols() == 0)
+        {
+            int Actual_Size = Result_Line->Leafs_Of_Line.cols();
+            Result_Line->Leafs_Of_Line.conservativeResize(3, Actual_Size + 1);
+
+            //Adicionando as informacoes da nova folha
+            Result_Line->Leafs_Of_Line(0, Actual_Size) = leafB(0, 0);
+            Result_Line->Leafs_Of_Line(1, Actual_Size) = leafB(1, 0);
+            Result_Line->Leafs_Of_Line(2, Actual_Size) = leafB(2, 0);
+
+        }
+        else
+        {
+            //Se não estiver vazia, verifica se a folha já pertence à Matriz
+            if((GroupContainsLeaf(Result_Line->Leafs_Of_Line, leafB)) == false)
+            {
+                int Actual_Size = Result_Line->Leafs_Of_Line.cols();
+                Result_Line->Leafs_Of_Line.conservativeResize(3, Actual_Size + 1);
+
+                //Adicionando as informacoes da nova folha
+                Result_Line->Leafs_Of_Line(0, Actual_Size) = leafB(0, 0);
+                Result_Line->Leafs_Of_Line(1, Actual_Size) = leafB(1, 0);
+                Result_Line->Leafs_Of_Line(2, Actual_Size) = leafB(2, 0);
+
+            }
+
+        }
+
+    }
+
+
+
+    Result_Line->SortLeafMatrixByX();
+    Result_Line->UpdateLimitsWithMatrix();
 
 
     return Result_Line;
@@ -3185,6 +3311,8 @@ diane_octomap::Stair::~Stair()
 
 diane_octomap::Line::Line()
 {
+    Leafs_Of_Line = MatrixXf();
+
     Line_Rho = 0;
     Line_Theta = 0;
     Line_Votes = 0;
@@ -3233,7 +3361,7 @@ void diane_octomap::Line::sortLeafs()
     while(cont)
     {
         cont=false;
-        for (int i = 0;i < Leafs_In_Line.size()-1; i++)
+        for (int i = 0;i < this->Leafs_In_Line.size()-1; i++)
         {
             if(Leafs_In_Line.at(i).getX() > Leafs_In_Line.at(i+1).getX())
             {

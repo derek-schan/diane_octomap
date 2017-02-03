@@ -52,10 +52,10 @@ public:
     double Line_Z;
 
     //Variáveis que serão utilizadas quando forem agrupadas
-    double min_X;
-    double max_X;
-    double min_Z;
-    double max_Z;
+    float min_X;
+    float max_X;
+    float min_Z;
+    float max_Z;
 
 
     Line();
@@ -346,7 +346,8 @@ public:
 
     bool CanMergeLines(Line* LineA, Line* LineB);
 
-    diane_octomap::Line* FitLine(Line* LineA, Line* LineB);
+    Line* FitLine(Line* LineA, Line* LineB);
+    Line* FitLineWithMatrix(Line* LineA, Line* LineB);
 
     vector<Line*> SortGroupLines(vector<Line*> GroupLines);
 
