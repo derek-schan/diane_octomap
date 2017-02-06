@@ -3563,8 +3563,6 @@ void diane_octomap::Line::UpdateLineParametersWithMinSquare()
     //Utilizando mínimos quadrados para obter os coeficientes [b, a]
     VectorXf Line_Coef =  A.jacobiSvd(ComputeThinU | ComputeThinV).solve(B);
 
-    Line_Coef(0, 0)
-
 
 
 }
