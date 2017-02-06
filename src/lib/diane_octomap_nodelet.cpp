@@ -22,6 +22,8 @@ void diane_octomap::DianeOctomapNodelet::onInit()
     msgOctomapFullMapPub = nodeHandle.advertise <Octomap> (getName() + "/octomap_full", 1000, true);
     msgOctomapOccupiedMarkerPub = nodeHandle.advertise <visualization_msgs::MarkerArray> (getName() + "/occupied_cells_vis_array", 1000, true);
     msgOctomapFreeMarkerPub = nodeHandle.advertise <visualization_msgs::MarkerArray> (getName() + "/free_cells_vis_array", 1000, true);
+    msgOctomapStair = nodeHandle.advertise<visualization_msgs::Marker>("visualization_marker", 10);
+
 
     msgBoolSub = nodeHandle.subscribe <std_msgs::Bool> ("/bool_msg", 10, &DianeOctomapNodelet::TreatCallBack, this);
     msgOctomapFullMapSub = nodeHandle.subscribe <Octomap> ("/octomap_full", 10, &DianeOctomapNodelet::TreatOctomapFullMapCallback, this);
@@ -133,8 +135,10 @@ void diane_octomap::DianeOctomapNodelet::PublishOccupiedMarker()
 
 void diane_octomap::DianeOctomapNodelet::TreatCallBack(const std_msgs::Bool::ConstPtr& msg)
 {
-      PublishOctomapFullMap();
-      PublishOccupiedMarker();
+    publisherGraf(stair_models.at(0));
+
+//    PublishOctomapFullMap();
+//    PublishOccupiedMarker();
 }
 
 
@@ -155,6 +159,54 @@ void diane_octomap::DianeOctomapNodelet::TreatOctomapFullMapCallback(const Octom
     }
 
 }
+
+void diane_octomap::DianeOctomapNodelet::publisherGraf(diane_octomap::Stair* stair)
+{
+
+
+    visualization_msgs::Marker line_list;
+    line_list.header.frame_id = "/my_frame";
+    line_list.header.stamp = ros::Time::now();
+    line_list.ns = "points_and_lines";
+    line_list.action = visualization_msgs::Marker::ADD;
+    line_list.pose.orientation.w = 1.0;
+
+
+    line_list.id = 0;
+
+
+    line_list.type = visualization_msgs::Marker::LINE_LIST;
+
+
+    // LINE_STRIP/LINE_LIST markers use only the x component of scale, for the line width
+    line_list.scale.x = 0.1;
+
+
+
+
+    // Line list is red
+    line_list.color.r = 1.0;
+    line_list.color.a = 1.0;
+
+    for (int i = 0; i < stair->Num_Steps; ++i)
+    {
+
+        geometry_msgs::Point p;
+        p.x = stair->Aresta.at(0).at(0);
+        p.y = stair->Aresta.at(0).at(1);
+        p.z = stair->Aresta.at(0).at(2);
+        line_list.points.push_back(p);
+
+        p.x = stair->Aresta.at(1).at(0);
+        p.y = stair->Aresta.at(1).at(1);
+        p.z = stair->Aresta.at(1).at(2);
+        line_list.points.push_back(p);
+    }
+
+    msgOctomapStair.publish(line_list);
+
+}
+
 
 
 diane_octomap::DianeOctomapNodelet::~DianeOctomapNodelet()

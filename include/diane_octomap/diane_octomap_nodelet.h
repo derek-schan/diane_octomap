@@ -42,6 +42,8 @@ class DianeOctomapNodelet : public DianeOctomap, public nodelet::Nodelet
      ros::Publisher msgOctomapFullMapPub;
      ros::Publisher msgOctomapOccupiedMarkerPub;
      ros::Publisher msgOctomapFreeMarkerPub;
+     ros::Publisher msgOctomapStair;
+
 
      ros::Subscriber msgBoolSub;
 
@@ -66,6 +68,7 @@ class DianeOctomapNodelet : public DianeOctomap, public nodelet::Nodelet
  protected:
      //Métodos de publicacão
      void PublishOctomapFullMap();
+     void publisherGraf(Stair* stair);
 
      void PublishOccupiedMarker();
 

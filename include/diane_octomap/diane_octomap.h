@@ -264,6 +264,8 @@ protected:
     double Min_Step_Height;
     double Max_Step_Height;
 
+    vector<Stair*> stair_models;
+
 
 public:
     DianeOctomap();
