@@ -69,7 +69,7 @@ void diane_octomap::DianeOctomapNodelet::PublishOccupiedMarker()
 
     for(OcTree::leaf_iterator it = octree->begin(), end = octree->end(); it!= end; ++it)
     {
-        //Verificar se o veoxel faz parte do Bounding Box "BBX"
+        //Verificar se o voxel faz parte do Bounding Box "BBX"
 
 
         //Se o nó estiver ocupado:

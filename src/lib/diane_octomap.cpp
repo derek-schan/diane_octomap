@@ -100,7 +100,7 @@ void diane_octomap::DianeOctomap::InternalCycleProcedure()
 void diane_octomap::DianeOctomap::GenerateOcTreeFromFile()
 {
 //    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_5.ot";
-    string otFileName = "/home/rob/catkin_ws/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_5.ot";
+    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_5.ot";
 
     AbstractOcTree* abs_tree = AbstractOcTree::read(otFileName);
     if(abs_tree) // read error returns NULL
@@ -237,7 +237,7 @@ vector<MatrixXf> diane_octomap::DianeOctomap::GroupPlanesByZ(MatrixXf Leafs)
 
 vector<double> diane_octomap::DianeOctomap::getParameter(MatrixXf Leafs)
     {
-     double max_x, min_x,max_y,min_y;
+     double max_x = -1000, min_x = 1000, max_y = -1000, min_y = 1000;
 
         for(int i = 0; i < Leafs.cols() ; i++)
         {
@@ -328,7 +328,7 @@ vector<vector<int>> diane_octomap::DianeOctomap::Accumulate2D(MatrixXf LeafZ)
 
     }
     //Faz a votaçao
-    for (int k = 0 ;k < Theta_Num ; k++)
+    for (int k=0; k<Theta_Num; k++)
     {
         float Theta =(Theta_Min+k*Theta_Passo+Theta_Passo/2) * (M_PI/180);
         float ctheta=cos(Theta);
@@ -381,7 +381,7 @@ void diane_octomap::DianeOctomap::StairDetection2D()
     vector<vector<diane_octomap::Line*>> Lines = LineHoughTransform(length, width, Grouped_Leafs_In_Matrix);
 
 
-    vector<vector<diane_octomap::Line*>> GroupLinesByRhoTheta = GroupLineByRhoTheta(Lines);
+    vector<vector<diane_octomap::Line*>> GroupLinesByRhoTheta = GroupLineByRhoTheta(Lines1);
 
 
     vector<vector<diane_octomap::Line*>> Filtered_Groups = FilterGroups(GroupLinesByRhoTheta, 3, 10);
@@ -420,6 +420,7 @@ void diane_octomap::DianeOctomap::StairDetection2D()
 
     vector<vector<Line*>> Filtered_Sequence = SequenceFilter(Merged_Segmented_Groups);
 
+    Filtered_Sequence.at(0).at(0)->UpdateLineParametersWithMinSquare();
 
     //Obtendo os candidatos à escada
     vector<Stair*> StairCandidates = CreateStairCandidates(Filtered_Sequence);
@@ -447,7 +448,7 @@ vector<vector<OcTree::leaf_bbx_iterator>> diane_octomap::DianeOctomap::GroupPlan
 
     for(int i=0; i<Leafs.size(); i++)
     {
-        Z=Leafs.at(i).getZ();
+        Z = Leafs.at(i).getZ();
 
         bool Group_Found = false;
 
@@ -3536,6 +3537,33 @@ void diane_octomap::Line::SortLeafMatrixByZ()
     SortedMatrix.transposeInPlace();
 
     Leafs_Of_Line = SortedMatrix;
+
+}
+
+
+void diane_octomap::Line::UpdateLineParametersWithMinSquare()
+{
+    double NewLineRho = 0.0;
+    double NewLineTheta = 0.0;
+
+    MatrixXf A = MatrixXf(Leafs_Of_Line.cols(), 2);
+    MatrixXf B = MatrixXf(Leafs_Of_Line.cols(), 1);
+
+    //Gerando as matrizes A e B
+    for(int i=0; i<Leafs_Of_Line.cols(); ++i)
+    {
+        //Gerando a Matriz A ([1 x0; 1 x1; ... ; 1 xn])
+        A(i, 0) = 1;
+        A(i, 1) = Leafs_Of_Line(0, i);
+
+        //Gerando a Matriz B ([y0; y1; ... ; yn])
+        B(i, 0) = Leafs_Of_Line(1, i);
+    }
+
+    //Utilizando mínimos quadrados para obter os coeficientes [b, a]
+    VectorXf Line_Coef =  A.jacobiSvd(ComputeThinU | ComputeThinV).solve(B);
+
+
 
 }
 
