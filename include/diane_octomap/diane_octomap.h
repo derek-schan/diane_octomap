@@ -88,6 +88,8 @@ protected:
 
 public:
     vector<OcTree::leaf_bbx_iterator> Leafs_In_Step;
+    MatrixXf Leafs_Of_Step;
+
     double Step_Length;
     double Step_Width;
     double Step_Height;
@@ -108,6 +110,12 @@ public:
     Step();
 
     void CalculateStepProperties();
+
+
+    void CalculateStepPropertiesWithMatrix();
+
+
+    void SortLeafMatrixByZInStep();
 
 
     //Filtrando as colunas de folhas que estão fora dos limites padrões de altura para degraus
@@ -131,6 +139,8 @@ public:
     vector<Step*> Steps;
 
     vector<OcTree::leaf_bbx_iterator> Leafs_In_Stair;
+    MatrixXf Leafs_Of_Stair;
+
 
     double Total_Length;
     double Total_Width;
@@ -161,14 +171,25 @@ public:
 
     //Método para obter as folhas presentes nos degraus
     void ExtractLeafsFromSteps();
+    void ExtractLeafsFromStepsMatrix();
+
+    bool StairContainsLeaf(Vector3f Leaf);
+
 
 
     //Método obtendo os X, Y e Z mínimos e máximos da escada
     void CalculateStairProperties();
+    void CalculateStairPropertiesWithMatrix();
 
 
+    //Método ordenando a matriz de folhas da escada por Z
+    void SortLeafMatrixByZInStair();
+
+
+    //Modelando as escadas
     void ModelStair(double Octree_Resolution);
     void ModelStair2D(double Octree_Resolution);
+    void ModelStair2DWithMatrix(double Octree_Resolution);
 
 
     virtual ~Stair();
@@ -370,6 +391,10 @@ public:
 
     //Criando os objetos dos candidatos de escada
     vector<Stair*> CreateStairCandidates(vector<vector<Line*>> Sequenced_Groups);
+    vector<Stair*> CreateStairCandidatesWithMatrix(vector<vector<Line*>> Sequenced_Groups);
+
+    void UpdateStairProperties(vector<Stair*> StairCandidates);
+
 
     ///*** Fim da Lógica utilizando retas***
 
@@ -440,6 +465,7 @@ public:
 
 
     vector<Stair*> ModelStairs(vector<Stair*>& Stair_Candidates);
+    vector<Stair*> ModelStairsWithMatrix(vector<Stair*>& Stair_Candidates);
 
 
 
