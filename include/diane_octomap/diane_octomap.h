@@ -22,7 +22,7 @@
 #include <octomap/OcTree.h>
 #include <octomap_msgs/Octomap.h>
 
-#include <eigen3/Eigen/Core>
+//#include <eigen3/Eigen/Core>
 
 #include "igl/sort.h"
 #include "igl/slice.h"
@@ -70,6 +70,10 @@ public:
     void SortLeafMatrixByZ();
 
     void UpdateLimitsWithMatrix();
+
+
+    //Funcao que executará Mínimos Quadrados para o conjunto de folhas de um degrau, atualizando os parâmetros das retas
+    void UpdateLineParametersWithMinSquare();
 
 
     virtual ~Line();
@@ -364,7 +368,6 @@ public:
 
     //Criando os objetos dos candidatos de escada
     vector<Stair*> CreateStairCandidates(vector<vector<Line*>> Sequenced_Groups);
-
 
     ///*** Fim da Lógica utilizando retas***
 
