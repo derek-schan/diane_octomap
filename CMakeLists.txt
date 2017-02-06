@@ -128,7 +128,10 @@ include_directories(
 
   ${EIGEN3_INCLUDE_DIR}
 
+  "/home/rob/Git/libigl/libigl/include"
+
   "/home/derekchan/Git/libigl/libigl/include"
+
 )
 
 ## Declare a C++ library
