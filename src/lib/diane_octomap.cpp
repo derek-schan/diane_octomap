@@ -58,7 +58,7 @@ void diane_octomap::DianeOctomap::StartInternalCycle()
     DianeOctomap::GetOccupiedLeafsOfBBX(octree);
 
     //Utilizando as folhas filtradas (presentes no vetor) para detectar as informacões da escada.
-//    DianeOctomap::StairDetection();
+    //DianeOctomap::StairDetection();
     DianeOctomap::StairDetection2D();
 
     internalThread = new boost::thread(DianeOctomap::InternalThreadFunction, this);
@@ -100,7 +100,7 @@ void diane_octomap::DianeOctomap::InternalCycleProcedure()
 void diane_octomap::DianeOctomap::GenerateOcTreeFromFile()
 {
 //    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_5.ot";
-    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_5.ot";
+    string otFileName = "/home/rob/catkin_ws/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_5.ot";
 
     AbstractOcTree* abs_tree = AbstractOcTree::read(otFileName);
     if(abs_tree) // read error returns NULL
@@ -434,7 +434,7 @@ void diane_octomap::DianeOctomap::StairDetection2D()
 
     //***Modelando cada candidato à escada (obtendo o comprimento, largura e altura média dos degraus, a aresta inicial e os pontos de arestas referentes aos outros degraus)
 //    vector<Stair*> Modeled_Stairs = ModelStairs(StairCandidates);
-    vector<Stair*> Modeled_Stairs = ModelStairsWithMatrix(StairCandidates);
+    Modeled_Stairs = ModelStairsWithMatrix(StairCandidates);
 
 
     cout<<endl;

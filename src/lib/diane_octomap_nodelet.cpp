@@ -135,7 +135,7 @@ void diane_octomap::DianeOctomapNodelet::PublishOccupiedMarker()
 
 void diane_octomap::DianeOctomapNodelet::TreatCallBack(const std_msgs::Bool::ConstPtr& msg)
 {
-    publisherGraf(stair_models.at(0));
+    publisherGraf(Modeled_Stairs.at(0));
 
 //    PublishOctomapFullMap();
 //    PublishOccupiedMarker();
@@ -188,21 +188,66 @@ void diane_octomap::DianeOctomapNodelet::publisherGraf(diane_octomap::Stair* sta
     line_list.color.r = 1.0;
     line_list.color.a = 1.0;
 
-    for (int i = 0; i < stair->Num_Steps; ++i)
+    for (int i = 0; i < stair->Points.size(); ++i)
     {
 
         geometry_msgs::Point p;
-        p.x = stair->Aresta.at(0).at(0);
-        p.y = stair->Aresta.at(0).at(1);
-        p.z = stair->Aresta.at(0).at(2);
+        p.x = stair->Points.at(i).at(0);
+        p.y = stair->Points.at(i).at(1);
+        p.z = stair->Points.at(i).at(2);
         line_list.points.push_back(p);
 
-        p.x = stair->Aresta.at(1).at(0);
-        p.y = stair->Aresta.at(1).at(1);
-        p.z = stair->Aresta.at(1).at(2);
-        line_list.points.push_back(p);
+
     }
 
+    for (int i = 0; 2*i < stair->Points.size()-2; ++i)
+    {
+
+        geometry_msgs::Point p;
+        p.x = stair->Points.at(2*i).at(0);
+        p.y = stair->Points.at(2*i).at(1);
+        p.z = stair->Points.at(2*i).at(2);
+        line_list.points.push_back(p);
+
+
+    }
+    for (int i = 0; 2*i < stair->Points.size() -2; ++i)
+    {
+
+        geometry_msgs::Point p;
+        p.x = stair->Points.at(2*i+1).at(0);
+        p.y = stair->Points.at(2*i+1).at(1);
+        p.z = stair->Points.at(2*i+1).at(2);
+        line_list.points.push_back(p);
+
+
+    }
+
+
+
+    for (int i = 0; 2*i   < stair->Points.size()-3; ++i)
+    {
+
+        geometry_msgs::Point p;
+        p.x = stair->Points.at(2*i+3).at(0);
+        p.y = stair->Points.at(2*i+3).at(1);
+        p.z = stair->Points.at(2*i+3).at(2);
+        line_list.points.push_back(p);
+
+
+    }
+
+    for (int i = 0; 2*i  < stair->Points.size() - 2; ++i)
+    {
+
+        geometry_msgs::Point p;
+        p.x = stair->Points.at(2*i+2).at(0);
+        p.y = stair->Points.at(2*i+2).at(1);
+        p.z = stair->Points.at(2*i+2).at(2);
+        line_list.points.push_back(p);
+
+
+    }
     msgOctomapStair.publish(line_list);
 
 }
