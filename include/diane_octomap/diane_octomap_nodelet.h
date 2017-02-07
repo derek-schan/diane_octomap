@@ -68,7 +68,7 @@ class DianeOctomapNodelet : public DianeOctomap, public nodelet::Nodelet
  protected:
      //Métodos de publicacão
      void PublishOctomapFullMap();
-     void publisherGraf(Stair* stair);
+     void publisherGraf(vector<Stair*> stair);
 
      void PublishOccupiedMarker();
 
