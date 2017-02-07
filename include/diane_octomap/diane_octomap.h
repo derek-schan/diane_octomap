@@ -60,19 +60,17 @@ public:
 
     Line();
 
-    void sortLeafs();
-
-    void UpdateLimits();
-
-
-    void SortLeafMatrixByX();
-
-    void SortLeafMatrixByZ();
-
+    //Método que atualiza os limites de X e Z do objeto Line
     void UpdateLimitsWithMatrix();
 
+    //Ordenando a matriz de folhas por X
+    void SortLeafMatrixByX();
 
-    //Funcao que executará Mínimos Quadrados para o conjunto de folhas de um degrau, atualizando os parâmetros das retas
+    //Ordenando a matriz de folhas por Z
+    void SortLeafMatrixByZ();
+
+
+    //Método que executará Mínimos Quadrados para o conjunto de folhas de um Line, atualizando os parâmetros Rho e Theta das retas
     void UpdateLineParametersWithMinSquare();
 
 
@@ -313,7 +311,7 @@ public:
     void GenerateOcTreeFromFile();
 
 
-    //Métodos utilizados para a identificar uma escada dada uma OcTree;
+    //Método para obter e armazenar as folhas contidas dentro de uma Bounding Box (Deixar opcional o uso de uma Bounding Box - Atualmente, o filtro não deveria retirar nenhuma folha)
     void GetOccupiedLeafsOfBBX(OcTree* octree);
 
 
@@ -321,37 +319,40 @@ public:
     //A identificacão da escada será sobre o vetor de folhas contidas dentro do Bounding Box usando uma lógica em 2D
     void StairDetection2D();
 
-    //Agrupando as folhas que possuem o mesmo Z (estão no mesmo nível) em grupos
-    vector<vector<OcTree::leaf_bbx_iterator>> GroupPlanesByZ(vector<OcTree::leaf_bbx_iterator> Leafs);
 
+    //Agrupando as folhas que possuem o mesmo Z (estão no mesmo nível) em grupos
     vector<MatrixXf> GroupPlanesByZ(MatrixXf Leafs);
 
+
     //Obtendo a largura e comprimento do espaco definido pelas folhas
-    vector<double> getParameter(vector<OcTree::leaf_bbx_iterator> Leafs);
-    vector<double> getParameter(MatrixXf Leafs);
+    vector<double> GetSpaceParameters(MatrixXf Leafs);
+
 
     //Aplicando a Transformada de Hough para todos os níveis de Z, obtendo todas um grupo de grupo de retas (cada grupo de retas é referente à um nível de Z)
-    vector<vector<Line*>> LineHoughTransform(double length, double width,vector<vector<OcTree::leaf_bbx_iterator>> Leafs);
-    vector<vector<Line*>> LineHoughTransform(double length, double width,vector<MatrixXf> Leafs);
+    vector<vector<Line*>> LineHoughTransform(double Space_Length, double Space_Width,vector<MatrixXf> Leafs);
+
 
     //Funcão que, para um determinado grupo de folhas, cria o acumulador, acumula os votos e extrai as retas desse grupo
-    vector<vector<int>> AccumulatePoint2D(vector<OcTree::leaf_bbx_iterator> LeafZ);
-    vector<vector<int>> Accumulate2D(MatrixXf LeafZ);
+    vector<vector<int>> Accumulation2D(MatrixXf LeafZ);
+
 
     //Funcão que cria um grupo de objetos Line, referente às retas em um determinado nível de Z
-    vector<Line*> createGroupLines(vector<vector<int>>Votes, float Z);
+    vector<Line*> CreateGroupLines(vector<vector<int>>Votes, float Z);
+
 
     //Agrupando as linhas por Rho e Theta (para identificar as retas recorrentes em vários níveis de Z)
     vector<vector<Line*>> GroupLineByRhoTheta(vector<vector<diane_octomap::Line*>> Lines);
 
+
     //Filtrando as retas que aparecem em muitos níveis de Z - provavelmente são paredes - ou que aparecem muitos poucos níveis de Z - provavelmente são ruídos)
     vector<vector<Line*>> FilterGroups(vector<vector<diane_octomap::Line*>> GroupLineByTheta, int Min_Size, int Max_Size);
+
 
     //Gerando um único objeto Line para cada grupo de Line's que possuem o mesmo Rho e Theta (armazenando o min_Z e o max_Z em que essa cada Line ocorre)
     vector<Line*> MergeGroupedLines(vector<vector<Line*>> GroupedLines);
 
+
     //Populando cada Line obtido com as folhas que possuam Z dentro dos limites e que estejam à uma distância mínima da reta
-    void PopulateLines(vector<Line*>& Merged_Lines, vector<vector<OcTree::leaf_bbx_iterator>> Leaf_Groups);
     void PopulateLinesWithMatrix(vector<Line*>& Merged_Lines, vector<MatrixXf> Leaf_Groups_In_Matrix);
 
 
@@ -359,9 +360,7 @@ public:
     bool GroupContainsLeaf(MatrixXf Leaf_Group, Vector3f Leaf);
 
 
-
     //Seperando as retas como segmento de reta
-    vector<Line*> SegmentLines(vector<Line*> Lines);
     vector<Line*> SegmentLinesWithMatrix(vector<Line*> Lines);
 
 
@@ -372,34 +371,48 @@ public:
     //Realizando um Merge para todos os grupos de linhas com o mesmo Theta e que possuem o Rho's muito próximos
     vector<vector<Line*>> MergeSegmentedGroupsLines(vector<vector<Line*>> GroupThetaIntervalLines);
 
+
     vector<Line*> MergeSegmentedGroup(vector<Line*> SegmentedGroupLines);
+
 
     bool CanMergeLines(Line* LineA, Line* LineB);
 
-    Line* FitLine(Line* LineA, Line* LineB);
+
     Line* FitLineWithMatrix(Line* LineA, Line* LineB);
 
+
+    //Ordenando o grupo de Lines por Rho
     vector<Line*> SortGroupLines(vector<Line*> GroupLines);
 
 
     //Buscando sequências nos grupos de linhas
     vector<vector<Line*>> SequenceFilter(vector<vector<Line*>> lines);
 
+
     bool VerifyLineSequence(vector<Line*> Group_Lines);
 
-    void CompareStair(vector<Line*> list1, vector<Line*> list2);
+
 
     //Criando os objetos dos candidatos de escada
-    vector<Stair*> CreateStairCandidates(vector<vector<Line*>> Sequenced_Groups);
     vector<Stair*> CreateStairCandidatesWithMatrix(vector<vector<Line*>> Sequenced_Groups);
+
 
     void UpdateStairProperties(vector<Stair*> StairCandidates);
 
 
+    //Modelando as escadas
+    vector<Stair*> ModelStairsWithMatrix(vector<Stair*>& Stair_Candidates);
+
+
+    //Escrevendo um candidato à escada para plot
+    void WriteStairCandidateToFileWithMatrix(diane_octomap::Stair* Stair);
+
     ///*** Fim da Lógica utilizando retas***
 
 
-//    ///*** Lógica utilizando planos***
+
+
+    ///*** Lógica utilizando planos*** (Não está completo)
 
 //    //A identificacão da escada será sobre o vetor de folhas contidas dentro do Bounding Box
 //    void StairDetection();
@@ -464,32 +477,41 @@ public:
 //    vector<Stair*> CleanStairSteps(vector<Stair*>& Detected_Stair_Candidates);
 
 
-    vector<Stair*> ModelStairs(vector<Stair*>& Stair_Candidates);
-    vector<Stair*> ModelStairsWithMatrix(vector<Stair*>& Stair_Candidates);
+//    vector<Stair*> ModelStairs(vector<Stair*>& Stair_Candidates);
 
 
 
-    //Métodos referentes à aplicacão dos planos encontrados no octomap.
-    Stair* ObtainStairCandidateFromGroup(vector<vector<double>> Group_Planes);
+//    //Métodos referentes à aplicacão dos planos encontrados no octomap.
+//    Stair* ObtainStairCandidateFromGroup(vector<vector<double>> Group_Planes);
 
 
-    //Métodos referentes à couts e à escrita em arquivos
-    void PrintAccumulator();
+//    //Métodos referentes à couts e à escrita em arquivos
+//    void PrintAccumulator();
 
 
-    void WriteFilteredPlanesToFile(vector<vector<double>> Filtered_Planes);
+//    //Método para escrita dos Planos filtrados
+//    void WriteFilteredPlanesToFile(vector<vector<double>> Filtered_Planes);
 
 
-    void WriteMergedPlanesToFile(vector<vector<double>> Merged_Planes);
+//    //Métodos para escrita dos Planos Aglutinados
+//    void WriteMergedPlanesToFile(vector<vector<double>> Merged_Planes);
 
 
-    void WriteStairCandidateToFile(diane_octomap::Stair* Stair);
+//    //Escrevendo um candidato à escada para plot
+//    void WriteStairCandidateToFile(diane_octomap::Stair* Stair);
+
+    ///*** Lógica utilizando planos***
 
 
+
+
+
+
+
+    //Escrevendo as informacões de uma escada modelada para plot no matlab
     void WriteModeledStairPropertiesToFile(diane_octomap::Stair* Stair);
 
 
-    ///*** Lógica utilizando planos***
 
 
     virtual ~DianeOctomap();
