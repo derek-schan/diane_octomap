@@ -27,6 +27,7 @@
 
 
 #include <diane_octomap/StairInfo.h>
+#include <diane_octomap/StairArrayInfo.h>
 
 
 namespace diane_octomap {
@@ -50,6 +51,10 @@ class DianeOctomapNodelet : public DianeOctomap, public nodelet::Nodelet
      ros::Publisher msgModeledStairVisualPub;
 
      ros::Publisher msgModeledStairPub;
+
+     ros::Publisher msgModeledStairAllPub;
+
+
 
      //Declarando os Subscribers de Mensagens
      ros::Subscriber msgBoolSub;
@@ -75,6 +80,8 @@ class DianeOctomapNodelet : public DianeOctomap, public nodelet::Nodelet
      void PublishStairModelsVisual(vector<Stair*> Modeled_Stairs);
 
      void PublishStairModel(Stair* Modeled_Stair);
+
+     void PublishAllStairsModel(vector<Stair*> Modeled_Stairs);
 
 
      //Métodos de Callback
