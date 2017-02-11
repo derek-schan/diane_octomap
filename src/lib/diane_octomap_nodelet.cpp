@@ -23,7 +23,7 @@ void diane_octomap::DianeOctomapNodelet::onInit()
     msgOctomapOccupiedMarkerPub = nodeHandle.advertise <visualization_msgs::MarkerArray> (getName() + "/occupied_cells_vis_array", 1000, true);
     msgOctomapFreeMarkerPub = nodeHandle.advertise <visualization_msgs::MarkerArray> (getName() + "/free_cells_vis_array", 1000, true);
     msgOctomapStair = nodeHandle.advertise<visualization_msgs::Marker>("visualization_marker", 10);
-
+    PubOctomapStair = nodeHandle.advertise <std_msgs::Float64MultiArray>("Stair_msg",10);
 
     msgBoolSub = nodeHandle.subscribe <std_msgs::Bool> ("/bool_msg", 10, &DianeOctomapNodelet::TreatCallBack, this);
     msgOctomapFullMapSub = nodeHandle.subscribe <Octomap> ("/octomap_full", 10, &DianeOctomapNodelet::TreatOctomapFullMapCallback, this);
@@ -136,6 +136,7 @@ void diane_octomap::DianeOctomapNodelet::PublishOccupiedMarker()
 void diane_octomap::DianeOctomapNodelet::TreatCallBack(const std_msgs::Bool::ConstPtr& msg)
 {
         publisherGraf(Modeled_Stairs);
+        Publisermsg(Modeled_Stairs);
 //    PublishOctomapFullMap();
     PublishOccupiedMarker();
 }
@@ -252,6 +253,26 @@ void diane_octomap::DianeOctomapNodelet::publisherGraf(vector<diane_octomap::Sta
     msgOctomapStair.publish(line_list);
 
 }
+
+void diane_octomap::DianeOctomapNodelet::Publisermsg(vector<diane_octomap::Stair*> stair)
+{
+    std_msgs::Float64MultiArray msg;
+    if(stair.size()>0)
+    {
+        msg.data.push_back(stair.at(0)->Plane_Alpha);
+        msg.data.push_back(stair.at(0)->Num_Steps);
+        for (int i = 0; i < stair.at(0)->Points.size(); ++i)
+        {
+            msg.data.push_back(stair.at(0)->Points.at(i).at(0));
+            msg.data.push_back(stair.at(0)->Points.at(i).at(1));
+            msg.data.push_back(stair.at(0)->Points.at(i).at(2));
+
+        }
+    }
+
+  PubOctomapStair.publish(msg);
+}
+
 
 
 

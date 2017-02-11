@@ -454,7 +454,7 @@ vector<diane_octomap::Line*> diane_octomap::DianeOctomap::CreateGroupLines(vecto
 {
     vector<Line*> Lines;
 
-    double Min_Votes = 10;
+    int Min_Votes = 10;
 
     for (int i=0; i<Votes.size(); i++)
     {
@@ -471,6 +471,7 @@ vector<diane_octomap::Line*> diane_octomap::DianeOctomap::CreateGroupLines(vecto
 
                 Lines.push_back(line);
             }
+
 
         }
 
@@ -1327,6 +1328,8 @@ void diane_octomap::DianeOctomap::WriteStairCandidateToFileWithMatrix(diane_octo
     stairfile.close();
 
 }
+
+
 
 
 //-------------------------------------------------------------------------------------------------------------------------------------
