@@ -46,6 +46,7 @@ class DianeOctomapNodelet : public DianeOctomap, public nodelet::Nodelet
 
      ros::Publisher msgOctomapStairPub;
 
+	 ros::Publisher PubOctomapStair;
 
      //Declarando os Subscribers de Mensagens
      ros::Subscriber msgBoolSub;
@@ -69,6 +70,8 @@ class DianeOctomapNodelet : public DianeOctomap, public nodelet::Nodelet
      void PublishOccupiedMarker();
 
      void PublishStairModels(vector<Stair*> StairModels);
+
+     void Publisermsg(vector<Stair*> stair);
 
 
      //Métodos de Callback

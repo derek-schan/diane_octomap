@@ -22,6 +22,7 @@ void diane_octomap::DianeOctomapNodelet::onInit()
     msgOctomapFullMapPub = nodeHandle.advertise <Octomap> (getName() + "/octomap_full", 1000, true);
     msgOctomapOccupiedMarkerPub = nodeHandle.advertise <visualization_msgs::MarkerArray> (getName() + "/occupied_cells_vis_array", 1000, true);
     msgOctomapFreeMarkerPub = nodeHandle.advertise <visualization_msgs::MarkerArray> (getName() + "/free_cells_vis_array", 1000, true);
+    PubOctomapStair = nodeHandle.advertise <std_msgs::Float64MultiArray>("Stair_msg",10);
 
     msgOctomapStairPub = nodeHandle.advertise<visualization_msgs::Marker>(getName() + "/Modeled_Stairs_Visualization_Markers", 10);
 
@@ -233,6 +234,26 @@ void diane_octomap::DianeOctomapNodelet::PublishStairModels(vector<diane_octomap
     }
 
     msgOctomapStairPub.publish(line_list);
+
+}
+
+void diane_octomap::DianeOctomapNodelet::Publisermsg(vector<diane_octomap::Stair*> stair)
+{
+    std_msgs::Float64MultiArray msg;
+    if(stair.size()>0)
+    {
+        msg.data.push_back(stair.at(0)->Plane_Alpha);
+        msg.data.push_back(stair.at(0)->Num_Steps);
+        for (int i = 0; i < stair.at(0)->Points.size(); ++i)
+        {
+            msg.data.push_back(stair.at(0)->Points.at(i).at(0));
+            msg.data.push_back(stair.at(0)->Points.at(i).at(1));
+            msg.data.push_back(stair.at(0)->Points.at(i).at(2));
+
+        }
+    }
+
+  PubOctomapStair.publish(msg);
 
 }
 
