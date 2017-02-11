@@ -13,3 +13,9 @@ float32 Step_Height
 
 float64 Plane_Alpha
 
+
+float32[] Edge_Coordinates
+
+
+float32[] Points_Coordinates
+

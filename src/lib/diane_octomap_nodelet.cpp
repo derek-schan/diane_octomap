@@ -18,6 +18,7 @@ void diane_octomap::DianeOctomapNodelet::onInit()
 {
     nodeHandle = getNodeHandle();
 
+
     //Inicializando os Publishers de Mensagens
     msgOctomapFullMapPub = nodeHandle.advertise <Octomap> (getName() + "/octomap_full", 1000, true);
     msgOctomapOccupiedMarkerPub = nodeHandle.advertise <visualization_msgs::MarkerArray> (getName() + "/occupied_cells_vis_array", 1000, true);
@@ -25,8 +26,8 @@ void diane_octomap::DianeOctomapNodelet::onInit()
 
     msgModeledStairVisualPub = nodeHandle.advertise<visualization_msgs::Marker>(getName() + "/Modeled_Stairs_Visualization_Markers", 10);
 
-//    msgModeledStairPub = nodeHandle.advertise <std_msgs::Float64MultiArray>("Stair_msg",10);
-    msgModeledStairPub = nodeHandle.advertise <diane_octomap::StairInfo>("Stair_msg",10);
+    msgModeledStairPub = nodeHandle.advertise <diane_octomap::StairInfo>(getName() + "/Modeled_Stair_Info",10);
+
 
     //Inicializando os Subscribers de Mensagens
     msgBoolSub = nodeHandle.subscribe <std_msgs::Bool> ("/bool_msg", 10, &DianeOctomapNodelet::TreatBoolCallBack, this);
@@ -140,6 +141,8 @@ void diane_octomap::DianeOctomapNodelet::PublishOccupiedMarker()
     }
 
     msgOctomapOccupiedMarkerPub.publish(occupiedNodesVis);
+
+
 
 }
 
@@ -258,6 +261,34 @@ void diane_octomap::DianeOctomapNodelet::PublishStairModel(Stair *Modeled_Stair)
     msg.Step_Height = Modeled_Stair->Step_Height;
 
     msg.Plane_Alpha = Modeled_Stair->Plane_Alpha;
+
+
+    vector<float> Aresta;
+
+    for(int i=0; i<Modeled_Stair->Aresta.size(); i++)
+    {
+        for(int j=0; j<Modeled_Stair->Aresta.at(i).size(); j++)
+        {
+            Aresta.push_back(Modeled_Stair->Aresta.at(i).at(j));
+        }
+    }
+
+
+    msg.Edge_Coordinates = Aresta;
+
+
+
+    vector<float> Pontos;
+
+    for(int k=0; k<Modeled_Stair->Points.size(); k++)
+    {
+        for(int l=0; l<Modeled_Stair->Points.at(k).size(); l++)
+        {
+            Pontos.push_back(Modeled_Stair->Points.at(k).at(l));
+        }
+    }
+
+    msg.Points_Coordinates = Pontos;
 
 
     msgModeledStairPub.publish(msg);
