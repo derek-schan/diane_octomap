@@ -18,15 +18,22 @@ void diane_octomap::DianeOctomapNodelet::onInit()
 {
     nodeHandle = getNodeHandle();
 
-    //Inicializando os Publishers e Subscribers
+    //Inicializando os Publishers de Mensagens
     msgOctomapFullMapPub = nodeHandle.advertise <Octomap> (getName() + "/octomap_full", 1000, true);
     msgOctomapOccupiedMarkerPub = nodeHandle.advertise <visualization_msgs::MarkerArray> (getName() + "/occupied_cells_vis_array", 1000, true);
     msgOctomapFreeMarkerPub = nodeHandle.advertise <visualization_msgs::MarkerArray> (getName() + "/free_cells_vis_array", 1000, true);
-    msgOctomapStair = nodeHandle.advertise<visualization_msgs::Marker>("visualization_marker", 10);
+
+    msgOctomapStairPub = nodeHandle.advertise<visualization_msgs::Marker>(getName() + "/Modeled_Stairs_Visualization_Markers", 10);
 
 
-    msgBoolSub = nodeHandle.subscribe <std_msgs::Bool> ("/bool_msg", 10, &DianeOctomapNodelet::TreatCallBack, this);
+    //Inicializando os Subscribers de Mensagens
+    msgBoolSub = nodeHandle.subscribe <std_msgs::Bool> ("/bool_msg", 10, &DianeOctomapNodelet::TreatBoolCallBack, this);
     msgOctomapFullMapSub = nodeHandle.subscribe <Octomap> ("/octomap_full", 10, &DianeOctomapNodelet::TreatOctomapFullMapCallback, this);
+
+
+    //Inicializando os Servers de Servicos
+    srvDetectStairsSer = nodeHandle.advertiseService(getName() + "/Detect_Stairs", &DianeOctomapNodelet::DetectStairsCallback, this);
+
 
     //Iniciando o Ciclo do Thread
     StartInternalCycle();
@@ -34,6 +41,7 @@ void diane_octomap::DianeOctomapNodelet::onInit()
 }
 
 
+//Publicando a octree que está armazenada internamente (Caso outro pacote queira utilizar)
 void diane_octomap::DianeOctomapNodelet::PublishOctomapFullMap()
 {
     Octomap map;
@@ -52,6 +60,7 @@ void diane_octomap::DianeOctomapNodelet::PublishOctomapFullMap()
 }
 
 
+//Publicando um MarkerArray com os voxels ocupados
 void diane_octomap::DianeOctomapNodelet::PublishOccupiedMarker()
 {
     size_t octomapSize = octree->size();
@@ -133,35 +142,9 @@ void diane_octomap::DianeOctomapNodelet::PublishOccupiedMarker()
 }
 
 
-void diane_octomap::DianeOctomapNodelet::TreatCallBack(const std_msgs::Bool::ConstPtr& msg)
+//Publicando os Markers que definem os Modelos de Escada detectados
+void diane_octomap::DianeOctomapNodelet::PublishStairModels(vector<diane_octomap::Stair*> StairModels)
 {
-        publisherGraf(Modeled_Stairs);
-//    PublishOctomapFullMap();
-    PublishOccupiedMarker();
-}
-
-
-void diane_octomap::DianeOctomapNodelet::TreatOctomapFullMapCallback(const Octomap::ConstPtr& msg)
-{
-    //Será chamado quando recebermos uma mensagem do octomap_server como o mapa completo
-    //Lendo o octomap à partir da mensagem recebida (que está sendo publicada pelo Octomap_Server
-    AbstractOcTree* abs_tree = octomap_msgs::msgToMap(*msg);
-
-    //Atualizar ou inicializar a octree
-    if(octreeFromMsg == NULL)
-    {
-        octreeFromMsg = dynamic_cast<OcTree*>(abs_tree);
-    }
-    else
-    {
-        //Atualiza o mapa de algum jeito
-    }
-
-}
-
-void diane_octomap::DianeOctomapNodelet::publisherGraf(vector<diane_octomap::Stair*> stair)
-{
-
 
     visualization_msgs::Marker line_list;
     line_list.header.frame_id = "/map";
@@ -186,73 +169,121 @@ void diane_octomap::DianeOctomapNodelet::publisherGraf(vector<diane_octomap::Sta
     // Line list is red
     line_list.color.r = 1.0;
     line_list.color.a = 1.0;
-    for(int j = 0; j < stair.size() ; ++j)
+    for(int j = 0; j < StairModels.size() ; ++j)
     {
-        for (int i = 0; i < stair.at(j)->Points.size(); ++i)
+        for (int i = 0; i < StairModels.at(j)->Points.size(); ++i)
+        {
+            geometry_msgs::Point p;
+            p.x = StairModels.at(j)->Points.at(i).at(0);
+            p.y = StairModels.at(j)->Points.at(i).at(1);
+            p.z = StairModels.at(j)->Points.at(i).at(2);
+            line_list.points.push_back(p);
+
+        }
+
+        for (int i = 0; 2*i < StairModels.at(j)->Points.size()-2; ++i)
         {
 
             geometry_msgs::Point p;
-            p.x = stair.at(j)->Points.at(i).at(0);
-            p.y = stair.at(j)->Points.at(i).at(1);
-            p.z = stair.at(j)->Points.at(i).at(2);
+            p.x = StairModels.at(j)->Points.at(2*i).at(0);
+            p.y = StairModels.at(j)->Points.at(2*i).at(1);
+            p.z = StairModels.at(j)->Points.at(2*i).at(2);
+            line_list.points.push_back(p);
+
+
+        }
+        for (int i = 0; 2*i < StairModels.at(j)->Points.size() -2; ++i)
+        {
+
+            geometry_msgs::Point p;
+            p.x = StairModels.at(j)->Points.at(2*i+1).at(0);
+            p.y = StairModels.at(j)->Points.at(2*i+1).at(1);
+            p.z = StairModels.at(j)->Points.at(2*i+1).at(2);
             line_list.points.push_back(p);
 
 
         }
 
-        for (int i = 0; 2*i < stair.at(j)->Points.size()-2; ++i)
+
+
+        for (int i = 0; 2*i   < StairModels.at(j)->Points.size()-3; ++i)
         {
 
             geometry_msgs::Point p;
-            p.x = stair.at(j)->Points.at(2*i).at(0);
-            p.y = stair.at(j)->Points.at(2*i).at(1);
-            p.z = stair.at(j)->Points.at(2*i).at(2);
-            line_list.points.push_back(p);
-
-
-        }
-        for (int i = 0; 2*i < stair.at(j)->Points.size() -2; ++i)
-        {
-
-            geometry_msgs::Point p;
-            p.x = stair.at(j)->Points.at(2*i+1).at(0);
-            p.y = stair.at(j)->Points.at(2*i+1).at(1);
-            p.z = stair.at(j)->Points.at(2*i+1).at(2);
+            p.x = StairModels.at(j)->Points.at(2*i+3).at(0);
+            p.y = StairModels.at(j)->Points.at(2*i+3).at(1);
+            p.z = StairModels.at(j)->Points.at(2*i+3).at(2);
             line_list.points.push_back(p);
 
 
         }
 
-
-
-        for (int i = 0; 2*i   < stair.at(j)->Points.size()-3; ++i)
+        for (int i = 0; 2*i  < StairModels.at(j)->Points.size() - 2; ++i)
         {
 
             geometry_msgs::Point p;
-            p.x = stair.at(j)->Points.at(2*i+3).at(0);
-            p.y = stair.at(j)->Points.at(2*i+3).at(1);
-            p.z = stair.at(j)->Points.at(2*i+3).at(2);
+            p.x = StairModels.at(j)->Points.at(2*i+2).at(0);
+            p.y = StairModels.at(j)->Points.at(2*i+2).at(1);
+            p.z = StairModels.at(j)->Points.at(2*i+2).at(2);
             line_list.points.push_back(p);
 
 
         }
 
-        for (int i = 0; 2*i  < stair.at(j)->Points.size() - 2; ++i)
-        {
-
-            geometry_msgs::Point p;
-            p.x = stair.at(j)->Points.at(2*i+2).at(0);
-            p.y = stair.at(j)->Points.at(2*i+2).at(1);
-            p.z = stair.at(j)->Points.at(2*i+2).at(2);
-            line_list.points.push_back(p);
-
-
-        }
     }
-    msgOctomapStair.publish(line_list);
+
+    msgOctomapStairPub.publish(line_list);
 
 }
 
+
+void diane_octomap::DianeOctomapNodelet::TreatBoolCallBack(const std_msgs::Bool::ConstPtr& msg)
+{
+    PublishStairModels(Modeled_Stairs);
+    //    PublishOctomapFullMap();
+    PublishOccupiedMarker();
+}
+
+
+void diane_octomap::DianeOctomapNodelet::TreatOctomapFullMapCallback(const Octomap::ConstPtr& msg)
+{
+    //Será chamado quando recebermos uma mensagem do octomap_server como o mapa completo
+    //Lendo o octomap à partir da mensagem recebida (que está sendo publicada pelo Octomap_Server
+    AbstractOcTree* abs_tree = octomap_msgs::msgToMap(*msg);
+
+    //Atualizar ou inicializar a octree
+    if(octreeFromMsg == NULL)
+    {
+        octreeFromMsg = dynamic_cast<OcTree*>(abs_tree);
+    }
+    else
+    {
+        //Atualiza o mapa de algum jeito
+    }
+
+}
+
+
+
+bool diane_octomap::DianeOctomapNodelet::DetectStairsCallback(std_srvs::Empty::Request & req , std_srvs::Empty::Response & res)
+{
+    //Se recebeu uma requisicao para detectar a escada, inicializa as funcoes de deteccao da escada.
+    //Após detectar a escada, a mesma continuará sendo publicada por um publisher em uma mensagem
+
+    //Obtendo a octree à partir do arquivo (o caminho para o arquivo ainda está definido chapado no código - mudar para um arquivo de configuracão).
+    DianeOctomap::GenerateOcTreeFromFile();
+
+    //Filtrando e armazenando as folhas da octree que estejam dentro da Bounding Box definida no método e que estejam ocupadas.
+    DianeOctomap::GetOccupiedLeafsOfBBX(octree);
+
+    //Utilizando as folhas filtradas (presentes no vetor) para detectar as informacões da escada.
+    //DianeOctomap::StairDetection();
+    DianeOctomap::StairDetection2D();
+
+
+    return true;
+
+}
 
 
 diane_octomap::DianeOctomapNodelet::~DianeOctomapNodelet()

@@ -51,15 +51,15 @@ void diane_octomap::DianeOctomap::StartInternalCycle()
 
     stop = false;
 
-    //Obtendo a octree à partir do arquivo (o caminho para o arquivo ainda está definido chapado no código - mudar para um arquivo de configuracão).
-    DianeOctomap::GenerateOcTreeFromFile();
+//    //Obtendo a octree à partir do arquivo (o caminho para o arquivo ainda está definido chapado no código - mudar para um arquivo de configuracão).
+//    DianeOctomap::GenerateOcTreeFromFile();
 
-    //Filtrando e armazenando as folhas da octree que estejam dentro da Bounding Box definida no método e que estejam ocupadas.
-    DianeOctomap::GetOccupiedLeafsOfBBX(octree);
+//    //Filtrando e armazenando as folhas da octree que estejam dentro da Bounding Box definida no método e que estejam ocupadas.
+//    DianeOctomap::GetOccupiedLeafsOfBBX(octree);
 
-    //Utilizando as folhas filtradas (presentes no vetor) para detectar as informacões da escada.
-    //DianeOctomap::StairDetection();
-    DianeOctomap::StairDetection2D();
+//    //Utilizando as folhas filtradas (presentes no vetor) para detectar as informacões da escada.
+//    //DianeOctomap::StairDetection();
+//    DianeOctomap::StairDetection2D();
 
     internalThread = new boost::thread(DianeOctomap::InternalThreadFunction, this);
 
@@ -158,7 +158,7 @@ void diane_octomap::DianeOctomap::GetOccupiedLeafsOfBBX(OcTree* octree)
     point3d min;
     min.x() = -5;
     min.y() = -5;
-    min.z() = -5;
+    min.z() = 0;
 
     point3d max;
     max.x() = 5;
@@ -225,7 +225,8 @@ void diane_octomap::DianeOctomap::StairDetection2D()
 
     ///Filtrando os grupos de Line's pela quantidade de vezes em que ocorreram.
     //(Se aparecer muitas vezes, deve ser uma parede. Se apareceu pouco, deve ser um ruído --- Os limites devem variar de acordo com a resolucão do octomap)
-    vector<vector<diane_octomap::Line*>> Filtered_Groups = FilterGroups(GroupLinesByRhoTheta, 3, 10);
+//    vector<vector<diane_octomap::Line*>> Filtered_Groups = FilterGroups(GroupLinesByRhoTheta, 3, 10);
+    vector<vector<diane_octomap::Line*>> Filtered_Groups = FilterGroups(GroupLinesByRhoTheta, 3, 6);
 
 
     ///Executando um Merge para cada grupo que passou pelo filtro de ocorrências
@@ -522,6 +523,7 @@ vector<vector<diane_octomap::Line*>> diane_octomap::DianeOctomap::GroupLineByRho
              }
 
          }
+
     }
 
     return GroupedLineByTheta;
@@ -1168,7 +1170,7 @@ bool diane_octomap::DianeOctomap::VerifyLineSequence(vector<Line*> Group_Lines)
 {
     vector<double> Rhos;
     double dist = 0.35;
-    double Tol_Z = 0.1;
+    double Tol_Z = 0.10;
 
     double minZFirstStep = Group_Lines.at(0)->min_Z;
 

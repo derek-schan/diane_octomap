@@ -39,43 +39,47 @@ class DianeOctomapNodelet : public DianeOctomap, public nodelet::Nodelet
      /// ROS node handle.
      ros::NodeHandle nodeHandle;
 
+     //Declarando os Publishers das Mensagens
      ros::Publisher msgOctomapFullMapPub;
      ros::Publisher msgOctomapOccupiedMarkerPub;
      ros::Publisher msgOctomapFreeMarkerPub;
-     ros::Publisher msgOctomapStair;
+
+     ros::Publisher msgOctomapStairPub;
 
 
+     //Declarando os Subscribers de Mensagens
      ros::Subscriber msgBoolSub;
 
      ros::Subscriber msgOctomapFullMapSub;
 
-//     std::vector <ros::Subscriber> msgeposstatesub;
-//     std::vector <ros::Subscriber> msgeposinfosub;
-//     ros::Subscriber msgKinectPitchSub;
 
-//     ros::Publisher msginputpub;
-//     ros::Publisher msgFeedbackPub;
-//     std::vector <ros::Publisher> msgEposInfoPub;
+     //Declarando os Servers dos Servicos
+     ros::ServiceServer srvDetectStairsSer;
 
-//     std::vector <ros::ServiceClient> srveposcontrolcli;
 
-//     void EposStateCallback(const std_msgs::UInt8::ConstPtr& msg, int i);
-//     void EposInfoCallback(const epos::Info::ConstPtr& msg, int i);
-//     void KinectPitchCallback(const std_msgs::Float64::ConstPtr& msg);
-//     void LoadVariablesInEpos(float* pos, short* controlMode, std::vector<bool>* digitalOut);
-//     void Feedback();
+     //Declarando os Clients dos Servicos
+     //std::vector <ros::ServiceClient> srveposcontrolcli;
+
+
 
  protected:
-     //Métodos de publicacão
+     //Métodos de Publicacão
      void PublishOctomapFullMap();
-     void publisherGraf(vector<Stair*> stair);
 
      void PublishOccupiedMarker();
 
+     void PublishStairModels(vector<Stair*> StairModels);
+
+
      //Métodos de Callback
-     void TreatCallBack(const std_msgs::Bool::ConstPtr &msg);
+     void TreatBoolCallBack(const std_msgs::Bool::ConstPtr &msg);
 
      void TreatOctomapFullMapCallback(const octomap_msgs::Octomap::ConstPtr &msg);
+
+
+     //Método de callback do servico que inicializa a deteccão da escada
+     bool DetectStairsCallback(std_srvs::Empty::Request & req , std_srvs::Empty::Response & res);
+
 
  public:
      DianeOctomapNodelet();
