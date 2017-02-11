@@ -54,7 +54,7 @@ find_package(Eigen3 REQUIRED)
 ## Generate messages in the 'msg' folder
  add_message_files(
    FILES
-   Stair_msg.msg
+   StairInfo.msg
  )
 
 ## Generate services in the 'srv' folder
@@ -109,7 +109,7 @@ find_package(Eigen3 REQUIRED)
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES diane_octomap_lib
-  CATKIN_DEPENDS nodelet roscpp std_msgs message_runtime
+  CATKIN_DEPENDS nodelet roscpp std_msgs message_generation message_runtime
 #  DEPENDS system_lib
 )
 

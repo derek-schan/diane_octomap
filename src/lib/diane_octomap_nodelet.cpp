@@ -22,10 +22,11 @@ void diane_octomap::DianeOctomapNodelet::onInit()
     msgOctomapFullMapPub = nodeHandle.advertise <Octomap> (getName() + "/octomap_full", 1000, true);
     msgOctomapOccupiedMarkerPub = nodeHandle.advertise <visualization_msgs::MarkerArray> (getName() + "/occupied_cells_vis_array", 1000, true);
     msgOctomapFreeMarkerPub = nodeHandle.advertise <visualization_msgs::MarkerArray> (getName() + "/free_cells_vis_array", 1000, true);
-    PubOctomapStair = nodeHandle.advertise <std_msgs::Float64MultiArray>("Stair_msg",10);
 
-    msgOctomapStairPub = nodeHandle.advertise<visualization_msgs::Marker>(getName() + "/Modeled_Stairs_Visualization_Markers", 10);
+    msgModeledStairVisualPub = nodeHandle.advertise<visualization_msgs::Marker>(getName() + "/Modeled_Stairs_Visualization_Markers", 10);
 
+//    msgModeledStairPub = nodeHandle.advertise <std_msgs::Float64MultiArray>("Stair_msg",10);
+    msgModeledStairPub = nodeHandle.advertise <diane_octomap::StairInfo>("Stair_msg",10);
 
     //Inicializando os Subscribers de Mensagens
     msgBoolSub = nodeHandle.subscribe <std_msgs::Bool> ("/bool_msg", 10, &DianeOctomapNodelet::TreatBoolCallBack, this);
@@ -144,7 +145,7 @@ void diane_octomap::DianeOctomapNodelet::PublishOccupiedMarker()
 
 
 //Publicando os Markers que definem os Modelos de Escada detectados
-void diane_octomap::DianeOctomapNodelet::PublishStairModels(vector<diane_octomap::Stair*> StairModels)
+void diane_octomap::DianeOctomapNodelet::PublishStairModelsVisual(vector<diane_octomap::Stair*> Modeled_Stairs)
 {
 
     visualization_msgs::Marker line_list;
@@ -170,62 +171,62 @@ void diane_octomap::DianeOctomapNodelet::PublishStairModels(vector<diane_octomap
     // Line list is red
     line_list.color.r = 1.0;
     line_list.color.a = 1.0;
-    for(int j = 0; j < StairModels.size() ; ++j)
+    for(int j = 0; j < Modeled_Stairs.size() ; ++j)
     {
-        for (int i = 0; i < StairModels.at(j)->Points.size(); ++i)
+        for (int i = 0; i < Modeled_Stairs.at(j)->Points.size(); ++i)
         {
             geometry_msgs::Point p;
-            p.x = StairModels.at(j)->Points.at(i).at(0);
-            p.y = StairModels.at(j)->Points.at(i).at(1);
-            p.z = StairModels.at(j)->Points.at(i).at(2);
+            p.x = Modeled_Stairs.at(j)->Points.at(i).at(0);
+            p.y = Modeled_Stairs.at(j)->Points.at(i).at(1);
+            p.z = Modeled_Stairs.at(j)->Points.at(i).at(2);
             line_list.points.push_back(p);
 
         }
 
-        for (int i = 0; 2*i < StairModels.at(j)->Points.size()-2; ++i)
+        for (int i = 0; 2*i < Modeled_Stairs.at(j)->Points.size()-2; ++i)
         {
 
             geometry_msgs::Point p;
-            p.x = StairModels.at(j)->Points.at(2*i).at(0);
-            p.y = StairModels.at(j)->Points.at(2*i).at(1);
-            p.z = StairModels.at(j)->Points.at(2*i).at(2);
+            p.x = Modeled_Stairs.at(j)->Points.at(2*i).at(0);
+            p.y = Modeled_Stairs.at(j)->Points.at(2*i).at(1);
+            p.z = Modeled_Stairs.at(j)->Points.at(2*i).at(2);
             line_list.points.push_back(p);
 
 
         }
-        for (int i = 0; 2*i < StairModels.at(j)->Points.size() -2; ++i)
+        for (int i = 0; 2*i < Modeled_Stairs.at(j)->Points.size() -2; ++i)
         {
 
             geometry_msgs::Point p;
-            p.x = StairModels.at(j)->Points.at(2*i+1).at(0);
-            p.y = StairModels.at(j)->Points.at(2*i+1).at(1);
-            p.z = StairModels.at(j)->Points.at(2*i+1).at(2);
-            line_list.points.push_back(p);
-
-
-        }
-
-
-
-        for (int i = 0; 2*i   < StairModels.at(j)->Points.size()-3; ++i)
-        {
-
-            geometry_msgs::Point p;
-            p.x = StairModels.at(j)->Points.at(2*i+3).at(0);
-            p.y = StairModels.at(j)->Points.at(2*i+3).at(1);
-            p.z = StairModels.at(j)->Points.at(2*i+3).at(2);
+            p.x = Modeled_Stairs.at(j)->Points.at(2*i+1).at(0);
+            p.y = Modeled_Stairs.at(j)->Points.at(2*i+1).at(1);
+            p.z = Modeled_Stairs.at(j)->Points.at(2*i+1).at(2);
             line_list.points.push_back(p);
 
 
         }
 
-        for (int i = 0; 2*i  < StairModels.at(j)->Points.size() - 2; ++i)
+
+
+        for (int i = 0; 2*i   < Modeled_Stairs.at(j)->Points.size()-3; ++i)
         {
 
             geometry_msgs::Point p;
-            p.x = StairModels.at(j)->Points.at(2*i+2).at(0);
-            p.y = StairModels.at(j)->Points.at(2*i+2).at(1);
-            p.z = StairModels.at(j)->Points.at(2*i+2).at(2);
+            p.x = Modeled_Stairs.at(j)->Points.at(2*i+3).at(0);
+            p.y = Modeled_Stairs.at(j)->Points.at(2*i+3).at(1);
+            p.z = Modeled_Stairs.at(j)->Points.at(2*i+3).at(2);
+            line_list.points.push_back(p);
+
+
+        }
+
+        for (int i = 0; 2*i  < Modeled_Stairs.at(j)->Points.size() - 2; ++i)
+        {
+
+            geometry_msgs::Point p;
+            p.x = Modeled_Stairs.at(j)->Points.at(2*i+2).at(0);
+            p.y = Modeled_Stairs.at(j)->Points.at(2*i+2).at(1);
+            p.z = Modeled_Stairs.at(j)->Points.at(2*i+2).at(2);
             line_list.points.push_back(p);
 
 
@@ -233,36 +234,47 @@ void diane_octomap::DianeOctomapNodelet::PublishStairModels(vector<diane_octomap
 
     }
 
-    msgOctomapStairPub.publish(line_list);
+    msgModeledStairVisualPub.publish(line_list);
 
 }
 
-void diane_octomap::DianeOctomapNodelet::Publisermsg(vector<diane_octomap::Stair*> stair)
+
+void diane_octomap::DianeOctomapNodelet::PublishStairModel(Stair *Modeled_Stair)
 {
-    std_msgs::Float64MultiArray msg;
-    if(stair.size()>0)
-    {
-        msg.data.push_back(stair.at(0)->Plane_Alpha);
-        msg.data.push_back(stair.at(0)->Num_Steps);
-        for (int i = 0; i < stair.at(0)->Points.size(); ++i)
-        {
-            msg.data.push_back(stair.at(0)->Points.at(i).at(0));
-            msg.data.push_back(stair.at(0)->Points.at(i).at(1));
-            msg.data.push_back(stair.at(0)->Points.at(i).at(2));
+    diane_octomap::StairInfo msg;
 
-        }
-    }
+    //Preenchendo as informacões da escada na mensagem a ser enviada
+    msg.Total_Length = Modeled_Stair->Total_Length;
+    msg.Total_Width = Modeled_Stair->Total_Width;
+    msg.Total_Height = Modeled_Stair->Total_Height;
 
-  PubOctomapStair.publish(msg);
+    msg.Min_Z = Modeled_Stair->Min_Z;
+    msg.Max_Z = Modeled_Stair->Max_Z;
+
+    msg.Num_Steps = Modeled_Stair->Num_Steps;
+
+    msg.Step_Length = Modeled_Stair->Step_Length;
+    msg.Step_Width = Modeled_Stair->Step_Width;
+    msg.Step_Height = Modeled_Stair->Step_Height;
+
+    msg.Plane_Alpha = Modeled_Stair->Plane_Alpha;
+
+
+    msgModeledStairPub.publish(msg);
 
 }
+
 
 
 void diane_octomap::DianeOctomapNodelet::TreatBoolCallBack(const std_msgs::Bool::ConstPtr& msg)
 {
-    PublishStairModels(Modeled_Stairs);
-    //    PublishOctomapFullMap();
     PublishOccupiedMarker();
+
+    PublishStairModelsVisual(Modeled_Stairs);
+
+
+    PublishStairModel(Modeled_Stairs.at(0));
+
 }
 
 

@@ -26,6 +26,9 @@
 #include <visualization_msgs/MarkerArray.h>
 
 
+#include <diane_octomap/StairInfo.h>
+
+
 namespace diane_octomap {
 
 
@@ -44,9 +47,9 @@ class DianeOctomapNodelet : public DianeOctomap, public nodelet::Nodelet
      ros::Publisher msgOctomapOccupiedMarkerPub;
      ros::Publisher msgOctomapFreeMarkerPub;
 
-     ros::Publisher msgOctomapStairPub;
+     ros::Publisher msgModeledStairVisualPub;
 
-	 ros::Publisher PubOctomapStair;
+     ros::Publisher msgModeledStairPub;
 
      //Declarando os Subscribers de Mensagens
      ros::Subscriber msgBoolSub;
@@ -69,9 +72,9 @@ class DianeOctomapNodelet : public DianeOctomap, public nodelet::Nodelet
 
      void PublishOccupiedMarker();
 
-     void PublishStairModels(vector<Stair*> StairModels);
+     void PublishStairModelsVisual(vector<Stair*> Modeled_Stairs);
 
-     void Publisermsg(vector<Stair*> stair);
+     void PublishStairModel(Stair* Modeled_Stair);
 
 
      //Métodos de Callback

@@ -51,15 +51,6 @@ void diane_octomap::DianeOctomap::StartInternalCycle()
 
     stop = false;
 
-//    //Obtendo a octree à partir do arquivo (o caminho para o arquivo ainda está definido chapado no código - mudar para um arquivo de configuracão).
-//    DianeOctomap::GenerateOcTreeFromFile();
-
-//    //Filtrando e armazenando as folhas da octree que estejam dentro da Bounding Box definida no método e que estejam ocupadas.
-//    DianeOctomap::GetOccupiedLeafsOfBBX(octree);
-
-//    //Utilizando as folhas filtradas (presentes no vetor) para detectar as informacões da escada.
-//    //DianeOctomap::StairDetection();
-//    DianeOctomap::StairDetection2D();
 
     internalThread = new boost::thread(DianeOctomap::InternalThreadFunction, this);
 
@@ -376,7 +367,7 @@ vector<vector<diane_octomap::Line*>> diane_octomap::DianeOctomap::LineHoughTrans
     Theta_Max = 360;
 
     Rho_Passo = 0.05;
-    Theta_Passo = 1;
+    Theta_Passo = 5;
 
     Rho_Num = (Rho_Max - Rho_Min)/Rho_Passo;
     Theta_Num = (Theta_Max - Theta_Min)/Theta_Passo;
