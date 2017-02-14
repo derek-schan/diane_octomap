@@ -41,7 +41,7 @@
 		</include>
 
 
-		<node pkg="tf" type="static_transform_publisher" name="simple_tf_kinect_broadcaster_node" args="0 0.4 0 0 0 1.57079632679 camera_depth_optical_frame map 100" />
+		<node pkg="tf" type="static_transform_publisher" name="simple_tf_kinect_broadcaster_node" args="0 0.3 0 0 0 1.57079632679 camera_depth_optical_frame map 100" />
 
 
 	<!--RELAY - Nó responsável por republicar os dados de pointcloud do Velodyne no tópico de pointcloud do Kinect-->
@@ -66,7 +66,7 @@
 			<remap from="cloud_in" to="/camera/depth/points" />
 
 			<!--Este segundo remap está sobreescrevendo o 1o. Por esse motivo, utilizamos o relay-->
-			<remap from="cloud_in" to="/velodyne_points" />
+			<!--<remap from="cloud_in" to="/velodyne_points" />-->
 
 		</node>
 
