@@ -14,20 +14,28 @@ diane_octomap::DianeOctomap::DianeOctomap()
 {
     stop = false;
 
-    //Variáveis para filtrar os planos a serem extraídos
+    ///Variáveis de configuracao para a Transformada de Hough em 2D (Deteccao das Linhas)
+    Rho_Passo = 0.05;
+    Theta_Passo = 5;
+
+
+
+    ///Variáveis para filtrar os planos a serem extraídos
     Filter_Phi_Min = 85;
     Filter_Phi_Max = 96;
     Filter_Vote_Min = 250;
     Filter_Vote_Max = 400;
 
-    //Definindo as tolerâncias para o merge dos planos
+
+    ///Definindo as tolerâncias para o merge dos planos
     delta_merge_Rho = 0.11;
 
     delta_Rho = 0.1;
     delta_Theta = 0;
     delta_Phi = 0;
 
-    //Definindo características da escada
+
+    ///Definindo características da escada
     Min_Num_Steps = 3;
     Min_Step_Width = 0.25;
     Max_Step_Width = 0.35;
@@ -91,8 +99,9 @@ void diane_octomap::DianeOctomap::InternalCycleProcedure()
 //Gerando a octree à partir de um file (Pode-se substituir para ler uma octree do octomap_server - Será necessário para uma deteccão online)
 void diane_octomap::DianeOctomap::GenerateOcTreeFromFile()
 {
-    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_5.ot";
-//    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_5.ot";
+    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_5.ot";
+//    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_5.ot";
+//    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_5_2.ot";
 
     AbstractOcTree* abs_tree = AbstractOcTree::read(otFileName);
     if(abs_tree) // read error returns NULL
@@ -149,7 +158,7 @@ void diane_octomap::DianeOctomap::GetOccupiedLeafsOfBBX(OcTree* octree)
     point3d min;
     min.x() = -5;
     min.y() = -5;
-    min.z() = 0;
+    min.z() = 0.05;
 
     point3d max;
     max.x() = 5;
@@ -187,11 +196,7 @@ void diane_octomap::DianeOctomap::GetOccupiedLeafsOfBBX(OcTree* octree)
 
 
 
-
-//Fazendo pelas retas -------------------------------------------------------------------------------------------------------------
-//---------------------------------------------------------------------------------------------------------------------------------
-//---------------------------------------------------------------------------------------------------------------------------------
-//---------------------------------------------------------------------------------------------------------------------------------
+///-------------------------------------------------- Deteccao de Escada pelo metodo 2D ---------------------------------------------------------
 
 void diane_octomap::DianeOctomap::StairDetection2D()
 {
@@ -216,7 +221,6 @@ void diane_octomap::DianeOctomap::StairDetection2D()
 
     ///Filtrando os grupos de Line's pela quantidade de vezes em que ocorreram.
     //(Se aparecer muitas vezes, deve ser uma parede. Se apareceu pouco, deve ser um ruído --- Os limites devem variar de acordo com a resolucão do octomap)
-//    vector<vector<diane_octomap::Line*>> Filtered_Groups = FilterGroups(GroupLinesByRhoTheta, 3, 10);
     vector<vector<diane_octomap::Line*>> Filtered_Groups = FilterGroups(GroupLinesByRhoTheta, 3, 6);
 
 
@@ -366,9 +370,7 @@ vector<vector<diane_octomap::Line*>> diane_octomap::DianeOctomap::LineHoughTrans
     Theta_Min = 0;
     Theta_Max = 360;
 
-    Rho_Passo = 0.05;
-    Theta_Passo = 5;
-
+    //Obtendo o numero de divisoes no eixo de Rho e no eixo de Theta
     Rho_Num = (Rho_Max - Rho_Min)/Rho_Passo;
     Theta_Num = (Theta_Max - Theta_Min)/Theta_Passo;
 
@@ -391,10 +393,12 @@ vector<vector<int>> diane_octomap::DianeOctomap::Accumulation2D(MatrixXf LeafZ)
 {
     vector<vector<int>> Accumulate2d;
     vector<int> addAccumulate;
-    bool add=false;
+    bool add = false;
+
+    double Acumulate_Dist_Tol = 0.025;
 
     //Criando o espaço de Hough
-    for (int j = 0 ; j < Rho_Num ; j++)
+    for(int j=0 ; j < Rho_Num ; j++)
     {
         if(add == false)
         {
@@ -419,15 +423,15 @@ vector<vector<int>> diane_octomap::DianeOctomap::Accumulation2D(MatrixXf LeafZ)
 
         for(int j=0; j<Rho_Num; j++)
         {
-            float Rho=(Rho_Min + (j+0.5)*Rho_Passo);
+            float Rho = (Rho_Min + (j+0.5)*Rho_Passo);
 
             for (int l=0; l<LeafZ.cols(); l++)
             {
                 float Rho_point = LeafZ(0, l)*ctheta + LeafZ(1, l)*stheta;
 
-                if (fabs(Rho_point - Rho)<=Rho_Passo/2)
+                if (fabs(Rho_point - Rho) <= Acumulate_Dist_Tol)
                 {
-                    Accumulate2d.at(j).at(k)=Accumulate2d.at(j).at(k)+ 1;
+                    Accumulate2d.at(j).at(k) = Accumulate2d.at(j).at(k)+ 1;
                 }
 
             }
@@ -456,14 +460,13 @@ vector<diane_octomap::Line*> diane_octomap::DianeOctomap::CreateGroupLines(vecto
             if(Votes.at(i).at(j) > Min_Votes)
             {
                 Line* line = new Line();
-                line->Line_Rho = (Rho_Min + (i+0.5)*Rho_Passo);
-                line->Line_Theta = (Theta_Min + (j+0.5)*Theta_Passo);
+                line->Line_Rho = (Rho_Min + (i+0.5) * Rho_Passo);
+                line->Line_Theta = (Theta_Min + (j+0.5) * Theta_Passo);
                 line->Line_Votes = Votes.at(i).at(j);
                 line->Line_Z = Z;
 
                 Lines.push_back(line);
             }
-
 
         }
 
@@ -814,7 +817,7 @@ vector<vector<diane_octomap::Line*>> diane_octomap::DianeOctomap::GroupLinesByTh
 
 
                 //Se as distâncias entre os mínimos dos intervalos e entre os máximos dos intervalos estiverem dentro da tolerância, adiciona a nova linha nesse grupo
-                double X_Tolerance = 0.10;
+                double X_Tolerance = 0.11;
 
                 if((fabs(temp_min_X - Groups_Lines.at(j).at(0)->min_X) <= X_Tolerance) && (fabs(temp_max_X - Groups_Lines.at(j).at(0)->max_X) <= X_Tolerance))
                 {
@@ -1291,7 +1294,15 @@ vector<diane_octomap::Stair*> diane_octomap::DianeOctomap::ModelStairsWithMatrix
         //Modelando a escada utilizando a Matriz de folhas
         stair->ModelStair2DWithMatrix(Octree_Resolution);
 
+
+//        //Aplicando um filtro de padrões de escada
+//        if((stair->Step_Height >= 0.15) && (stair->Step_Height <= 0.23) && (stair->Step_Width >= 0.27) && (stair->Step_Width <= 0.32))
+//        {
+//            Modeled_Stairs.push_back(stair);
+//        }
+
         Modeled_Stairs.push_back(stair);
+
 
     }
 
