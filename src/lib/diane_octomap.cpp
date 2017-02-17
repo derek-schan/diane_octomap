@@ -99,8 +99,9 @@ void diane_octomap::DianeOctomap::InternalCycleProcedure()
 //Gerando a octree à partir de um file (Pode-se substituir para ler uma octree do octomap_server - Será necessário para uma deteccão online)
 void diane_octomap::DianeOctomap::GenerateOcTreeFromFile()
 {
-    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_5.ot";
-//    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_5.ot";
+//    string otFileName = "/home/rob/catkin_ws/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_5.ot";
+//    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_5.ot";
+    string otFileName = "/home/rob/catkin_ws/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_5.ot";
 //    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_5_2.ot";
 
     AbstractOcTree* abs_tree = AbstractOcTree::read(otFileName);
