@@ -19,26 +19,26 @@ diane_octomap::DianeOctomap::DianeOctomap()
     Theta_Passo = 5;
 
 
-
-    ///Variáveis para filtrar os planos a serem extraídos
-    Filter_Phi_Min = 85;
-    Filter_Phi_Max = 96;
-    Filter_Vote_Min = 250;
-    Filter_Vote_Max = 400;
-
-
-    ///Definindo as tolerâncias para o merge dos planos
-    delta_merge_Rho = 0.11;
-
-    delta_Rho = 0.1;
-    delta_Theta = 0;
-    delta_Phi = 0;
+//    ///Variáveis para filtrar os planos a serem extraídos na Transformada de Hough em 3D (Deteccão de planos)
+//    Filter_Phi_Min = 85;
+//    Filter_Phi_Max = 96;
+//    Filter_Vote_Min = 250;
+//    Filter_Vote_Max = 400;
 
 
-    ///Definindo características da escada
+    ///Definindo as tolerâncias para o merge dos objetos Line's (Se a distância estiver dentro da tolerância, aplica o merge)
+    delta_merge_Rho = 0.11; //0.1
+
+//    ///Definindo as tolerâncias para o merge dos Planos detectados (Somente utilizado no 3D)
+//    delta_Rho = 0.1;
+//    delta_Theta = 0;
+//    delta_Phi = 0;
+
+
+    ///Definindo características padrões de uma escada
     Min_Num_Steps = 3;
     Min_Step_Width = 0.25;
-    Max_Step_Width = 0.35;
+    Max_Step_Width = 0.35;  //0.35
     Min_Step_Height = 0.09;
     Max_Step_Height = 0.20;
 
@@ -158,7 +158,7 @@ void diane_octomap::DianeOctomap::GetOccupiedLeafsOfBBX(OcTree* octree)
     point3d min;
     min.x() = -5;
     min.y() = -5;
-    min.z() = 0.05;
+    min.z() = 0.07;
 
     point3d max;
     max.x() = 5;
@@ -219,9 +219,11 @@ void diane_octomap::DianeOctomap::StairDetection2D()
     vector<vector<diane_octomap::Line*>> GroupLinesByRhoTheta = GroupLineByRhoTheta(Lines);
 
 
+    int min_num_line = 2;   //3
+    int max_num_line = 4;   //6
     ///Filtrando os grupos de Line's pela quantidade de vezes em que ocorreram.
     //(Se aparecer muitas vezes, deve ser uma parede. Se apareceu pouco, deve ser um ruído --- Os limites devem variar de acordo com a resolucão do octomap)
-    vector<vector<diane_octomap::Line*>> Filtered_Groups = FilterGroups(GroupLinesByRhoTheta, 3, 6);
+    vector<vector<diane_octomap::Line*>> Filtered_Groups = FilterGroups(GroupLinesByRhoTheta, min_num_line, max_num_line);
 
 
     ///Executando um Merge para cada grupo que passou pelo filtro de ocorrências
@@ -610,7 +612,8 @@ void diane_octomap::DianeOctomap::PopulateLinesWithMatrix(vector<diane_octomap::
 
                     double Rho_Point = (Accessed_Leaf(0, 0)*ctheta + Accessed_Leaf(1, 0)*stheta);
 
-                    if(fabs(Rho_Point - Rho) <= Rho_Passo/2)
+//                    if(fabs(Rho_Point - Rho) <= Rho_Passo/2)
+                    if(fabs(Rho_Point - Rho) <= Rho_Passo)
                     {
                         //Se a matriz estiver vazia, inclui a nova folha
                         if(Merged_Lines.at(i)->Leafs_Of_Line.cols() == 0)
@@ -817,7 +820,7 @@ vector<vector<diane_octomap::Line*>> diane_octomap::DianeOctomap::GroupLinesByTh
 
 
                 //Se as distâncias entre os mínimos dos intervalos e entre os máximos dos intervalos estiverem dentro da tolerância, adiciona a nova linha nesse grupo
-                double X_Tolerance = 0.11;
+                double X_Tolerance = 0.13; //0.11
 
                 if((fabs(temp_min_X - Groups_Lines.at(j).at(0)->min_X) <= X_Tolerance) && (fabs(temp_max_X - Groups_Lines.at(j).at(0)->max_X) <= X_Tolerance))
                 {
@@ -1165,7 +1168,7 @@ bool diane_octomap::DianeOctomap::VerifyLineSequence(vector<Line*> Group_Lines)
 {
     vector<double> Rhos;
     double dist = 0.35;
-    double Tol_Z = 0.10;
+    double Tol_Z = 0.14; //0.10
 
     double minZFirstStep = Group_Lines.at(0)->min_Z;
 

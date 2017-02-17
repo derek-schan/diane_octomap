@@ -238,51 +238,58 @@ protected:
     MatrixXf OccupiedPoints;
 
 
-    //Variáveis referentes à Transformada de Hough
+    ///Variáveis referentes à Transformada de Hough (2D e 3D)
     double Rho_Min;
     double Rho_Max;
     double Theta_Min;   //Em graus
     double Theta_Max;   //Em graus
-    double Phi_Min;     //Em graus
-    double Phi_Max;     //Em graus
+//    double Phi_Min;     //Em graus (Somente utilizado no 3D)
+//    double Phi_Max;     //Em graus (Somente utilizado no 3D)
 
     double Rho_Passo;   //Incremento em Rho
     double Theta_Passo; //Incremento em Theta
-    double Phi_Passo;   //Incremento em Phi
+//    double Phi_Passo;   //Incremento em Phi (Somente utilizado no 3D)
 
-    int Rho_Num;
-    int Theta_Num;
-    int Phi_Num;
+    int Rho_Num;    //Número de intervalos no eixo de rho no espaco da transformada
+    int Theta_Num;  //Número de intervalos no eixo de theta no espaco da transformada
+//    int Phi_Num;  //Número de intervalos no eixo de phi no espaco da transformada (Somente utilizado no 3D)
 
-    //Diferenca máxima entre o Rho do ponto e o Rho da célula para ser considerado como um voto
-    double Max_Planes_Distance = 0.1;
 
-    vector<vector<vector<int>>> Accumulator;
+//    //Diferenca máxima entre o Rho do ponto e o Rho da célula para ser considerado como um voto (Somente utilizado no 3D)
+//    double Max_Planes_Distance = 0.1;
 
-    //Variáveis para filtrar os planos a serem extraídos
-    double Filter_Phi_Min;
-    double Filter_Phi_Max;
-    double Filter_Vote_Min;
-    double Filter_Vote_Max;
 
-    //Definindo as tolerâncias para o merge dos planos
+//    vector<vector<vector<int>>> Accumulator;
+
+//    //Variáveis para filtrar os planos a serem extraídos (Somente utilizado no 3D)
+//    double Filter_Phi_Min;
+//    double Filter_Phi_Max;
+//    double Filter_Vote_Min;
+//    double Filter_Vote_Max;
+
+
+    ///Definindo as tolerâncias para o merge dos planos
     double delta_merge_Rho;
 
-    double delta_Rho;
-    double delta_Theta;
-    double delta_Phi;
 
-    //Definindo variáveis resultantes do histograma
-    double Histogram_Dist_Min;
-    double Histogram_Dist_Max;
+//    ///Definindo as tolerâncias para o merge dos Planos detectados (Somente utilizado no 3D)
+//    double delta_Rho;
+//    double delta_Theta;
+//    double delta_Phi;
 
-    //Definindo características da escada
+//    ///Definindo variáveis resultantes do histograma de planos
+//    double Histogram_Dist_Min;
+//    double Histogram_Dist_Max;
+
+    ///Definindo características padrões de uma escada
     int Min_Num_Steps;
     double Min_Step_Width;
     double Max_Step_Width;
     double Min_Step_Height;
     double Max_Step_Height;
 
+
+    ///Variável que armazenará todas as escadas que foram modeladas
     vector<Stair*> Modeled_Stairs;
 
 
