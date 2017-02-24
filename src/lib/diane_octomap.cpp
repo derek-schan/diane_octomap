@@ -15,8 +15,8 @@ diane_octomap::DianeOctomap::DianeOctomap()
     stop = false;
 
     ///Variáveis de configuracao para a Transformada de Hough em 2D (Deteccao das Linhas)
-    Rho_Passo = 0.05;
-    Theta_Passo = 5;
+    Rho_Passo = 0.05;   //0.05
+    Theta_Passo = 5;    //5
 
 
 //    ///Variáveis para filtrar os planos a serem extraídos na Transformada de Hough em 3D (Deteccão de planos)
@@ -36,11 +36,11 @@ diane_octomap::DianeOctomap::DianeOctomap()
 
 
     ///Definindo características padrões de uma escada
-    Min_Num_Steps = 3;
-    Min_Step_Width = 0.25;
+    Min_Num_Steps = 3;      //3
+    Min_Step_Width = 0.25;  //0.25
     Max_Step_Width = 0.35;  //0.35
-    Min_Step_Height = 0.09;
-    Max_Step_Height = 0.20;
+    Min_Step_Height = 0.09; //0.09
+    Max_Step_Height = 0.20; //0.20
 
     OccupiedPoints = MatrixXf();
 
@@ -99,10 +99,18 @@ void diane_octomap::DianeOctomap::InternalCycleProcedure()
 //Gerando a octree à partir de um file (Pode-se substituir para ler uma octree do octomap_server - Será necessário para uma deteccão online)
 void diane_octomap::DianeOctomap::GenerateOcTreeFromFile()
 {
-//    string otFileName = "/home/rob/catkin_ws/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_5.ot";
+//    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_1.ot";
+//    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_1.ot";
+
+//    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_3.ot";
+//    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_3.ot";
+
 //    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_5.ot";
-    string otFileName = "/home/rob/catkin_ws/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_5.ot";
+    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_5.ot";
 //    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_5_2.ot";
+
+//    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_7.ot";
+//    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_7.ot";
 
     AbstractOcTree* abs_tree = AbstractOcTree::read(otFileName);
     if(abs_tree) // read error returns NULL
@@ -159,7 +167,7 @@ void diane_octomap::DianeOctomap::GetOccupiedLeafsOfBBX(OcTree* octree)
     point3d min;
     min.x() = -5;
     min.y() = -5;
-    min.z() = 0.07;
+    min.z() = 0.05;
 
     point3d max;
     max.x() = 5;
@@ -220,8 +228,8 @@ void diane_octomap::DianeOctomap::StairDetection2D()
     vector<vector<diane_octomap::Line*>> GroupLinesByRhoTheta = GroupLineByRhoTheta(Lines);
 
 
-    int min_num_line = 2;   //3
-    int max_num_line = 4;   //6
+    int min_num_line = 3;   //3
+    int max_num_line = 6;   //6
     ///Filtrando os grupos de Line's pela quantidade de vezes em que ocorreram.
     //(Se aparecer muitas vezes, deve ser uma parede. Se apareceu pouco, deve ser um ruído --- Os limites devem variar de acordo com a resolucão do octomap)
     vector<vector<diane_octomap::Line*>> Filtered_Groups = FilterGroups(GroupLinesByRhoTheta, min_num_line, max_num_line);
@@ -398,7 +406,7 @@ vector<vector<int>> diane_octomap::DianeOctomap::Accumulation2D(MatrixXf LeafZ)
     vector<int> addAccumulate;
     bool add = false;
 
-    double Acumulate_Dist_Tol = 0.025;
+    double Acumulate_Dist_Tol = 0.025; //0.025
 
     //Criando o espaço de Hough
     for(int j=0 ; j < Rho_Num ; j++)
@@ -453,7 +461,7 @@ vector<diane_octomap::Line*> diane_octomap::DianeOctomap::CreateGroupLines(vecto
 {
     vector<Line*> Lines;
 
-    int Min_Votes = 10;
+    int Min_Votes = 10; //10
 
     for (int i=0; i<Votes.size(); i++)
     {
@@ -613,8 +621,7 @@ void diane_octomap::DianeOctomap::PopulateLinesWithMatrix(vector<diane_octomap::
 
                     double Rho_Point = (Accessed_Leaf(0, 0)*ctheta + Accessed_Leaf(1, 0)*stheta);
 
-//                    if(fabs(Rho_Point - Rho) <= Rho_Passo/2)
-                    if(fabs(Rho_Point - Rho) <= Rho_Passo)
+                    if(fabs(Rho_Point - Rho) <= Rho_Passo/2)
                     {
                         //Se a matriz estiver vazia, inclui a nova folha
                         if(Merged_Lines.at(i)->Leafs_Of_Line.cols() == 0)
@@ -821,7 +828,7 @@ vector<vector<diane_octomap::Line*>> diane_octomap::DianeOctomap::GroupLinesByTh
 
 
                 //Se as distâncias entre os mínimos dos intervalos e entre os máximos dos intervalos estiverem dentro da tolerância, adiciona a nova linha nesse grupo
-                double X_Tolerance = 0.13; //0.11
+                double X_Tolerance = 0.11; //0.11
 
                 if((fabs(temp_min_X - Groups_Lines.at(j).at(0)->min_X) <= X_Tolerance) && (fabs(temp_max_X - Groups_Lines.at(j).at(0)->max_X) <= X_Tolerance))
                 {
@@ -1168,8 +1175,8 @@ vector<vector<diane_octomap::Line*>> diane_octomap::DianeOctomap::SequenceFilter
 bool diane_octomap::DianeOctomap::VerifyLineSequence(vector<Line*> Group_Lines)
 {
     vector<double> Rhos;
-    double dist = 0.35;
-    double Tol_Z = 0.14; //0.10
+//    double dist = 0.35;
+    double Tol_Z = 0.10; //0.10
 
     double minZFirstStep = Group_Lines.at(0)->min_Z;
 
@@ -1299,13 +1306,13 @@ vector<diane_octomap::Stair*> diane_octomap::DianeOctomap::ModelStairsWithMatrix
         stair->ModelStair2DWithMatrix(Octree_Resolution);
 
 
-//        //Aplicando um filtro de padrões de escada
-//        if((stair->Step_Height >= 0.15) && (stair->Step_Height <= 0.23) && (stair->Step_Width >= 0.27) && (stair->Step_Width <= 0.32))
-//        {
-//            Modeled_Stairs.push_back(stair);
-//        }
+        //Aplicando um filtro de padrões de escada
+        if((stair->Step_Height >= 0.14) && (stair->Step_Height <= 0.23) && (stair->Step_Width >= 0.27) && (stair->Step_Width <= 0.32))
+        {
+            Modeled_Stairs.push_back(stair);
+        }
 
-        Modeled_Stairs.push_back(stair);
+//        Modeled_Stairs.push_back(stair);
 
 
     }
@@ -3132,7 +3139,8 @@ void diane_octomap::Stair::ModelStair2D(double Octree_Resolution)
 
     //Projetando os dois pontos no plano que passa pela centróide do primeiro degrau
     double First_Point_Rho = Selected_Points.at(0).at(0) * n[0] + Selected_Points.at(0).at(1) * n[1] + Selected_Points.at(0).at(2) * n[2];
-    double First_Dist = abs(First_Point_Rho - First_Centroid_Rho);
+    double First_Dist = First_Centroid_Rho - First_Point_Rho;
+//    double First_Dist = abs(First_Point_Rho - First_Centroid_Rho);
 
     vector<double> First_Projection_Centroid_Vector;
     First_Projection_Centroid_Vector.push_back(First_Dist * n[0]);
@@ -3141,13 +3149,13 @@ void diane_octomap::Stair::ModelStair2D(double Octree_Resolution)
 
 
     vector<double> First_Projected_Centroid_Point;
-    First_Projected_Centroid_Point.push_back(Selected_Points.at(0).at(0) - First_Projection_Centroid_Vector.at(0));
-    First_Projected_Centroid_Point.push_back(Selected_Points.at(0).at(1) - First_Projection_Centroid_Vector.at(1));
-    First_Projected_Centroid_Point.push_back(Selected_Points.at(0).at(2) - First_Projection_Centroid_Vector.at(2));
+    First_Projected_Centroid_Point.push_back(Selected_Points.at(0).at(0) + First_Projection_Centroid_Vector.at(0));
+    First_Projected_Centroid_Point.push_back(Selected_Points.at(0).at(1) + First_Projection_Centroid_Vector.at(1));
+    First_Projected_Centroid_Point.push_back(Selected_Points.at(0).at(2) + First_Projection_Centroid_Vector.at(2));
 
 
     double Last_Point_Rho = Selected_Points.at(1).at(0) * n[0] + Selected_Points.at(1).at(1) * n[1] + Selected_Points.at(1).at(2) * n[2];
-    double Last_Dist = abs(Last_Point_Rho - First_Centroid_Rho);
+    double Last_Dist = First_Centroid_Rho - Last_Point_Rho;
 
     vector<double> Last_Projection_Centroid_Vector;
     Last_Projection_Centroid_Vector.push_back(Last_Dist * n[0]);
@@ -3156,9 +3164,9 @@ void diane_octomap::Stair::ModelStair2D(double Octree_Resolution)
 
 
     vector<double> Last_Projected_Centroid_Point;
-    Last_Projected_Centroid_Point.push_back(Selected_Points.at(1).at(0) - Last_Projection_Centroid_Vector.at(0));
-    Last_Projected_Centroid_Point.push_back(Selected_Points.at(1).at(1) - Last_Projection_Centroid_Vector.at(1));
-    Last_Projected_Centroid_Point.push_back(Selected_Points.at(1).at(2) - Last_Projection_Centroid_Vector.at(2));
+    Last_Projected_Centroid_Point.push_back(Selected_Points.at(1).at(0) + Last_Projection_Centroid_Vector.at(0));
+    Last_Projected_Centroid_Point.push_back(Selected_Points.at(1).at(1) + Last_Projection_Centroid_Vector.at(1));
+    Last_Projected_Centroid_Point.push_back(Selected_Points.at(1).at(2) + Last_Projection_Centroid_Vector.at(2));
 
 
     //Projetando os dois pontos resultantes no plano horizontal do menor nível detectado de escada (subtraindo metade da resolucao para chegar teoricamente ao chão)
@@ -3168,7 +3176,7 @@ void diane_octomap::Stair::ModelStair2D(double Octree_Resolution)
     n_min[2] = 1;
 
     double First_Projected_Point_Rho = First_Projected_Centroid_Point.at(0) * n_min[0] + First_Projected_Centroid_Point.at(1) * n_min[1] + First_Projected_Centroid_Point.at(2) * n_min[2];
-    double First_Min_Dist = abs(First_Projected_Point_Rho - (Min_Z - Octree_Resolution/2));
+    double First_Min_Dist = (Min_Z - Octree_Resolution/2) - First_Projected_Point_Rho;
 
     vector<double> First_Projection_Vector;
     First_Projection_Vector.push_back(First_Min_Dist * n_min[0]);
@@ -3177,13 +3185,13 @@ void diane_octomap::Stair::ModelStair2D(double Octree_Resolution)
 
 
     vector<double> First_Projected_Point;
-    First_Projected_Point.push_back(First_Projected_Centroid_Point.at(0) - First_Projection_Vector.at(0));
-    First_Projected_Point.push_back(First_Projected_Centroid_Point.at(1) - First_Projection_Vector.at(1));
-    First_Projected_Point.push_back(First_Projected_Centroid_Point.at(2) - First_Projection_Vector.at(2));
+    First_Projected_Point.push_back(First_Projected_Centroid_Point.at(0) + First_Projection_Vector.at(0));
+    First_Projected_Point.push_back(First_Projected_Centroid_Point.at(1) + First_Projection_Vector.at(1));
+    First_Projected_Point.push_back(First_Projected_Centroid_Point.at(2) + First_Projection_Vector.at(2));
 
 
     double Last_Projected_Point_Rho = Last_Projected_Centroid_Point.at(0) * n_min[0] + Last_Projected_Centroid_Point.at(1) * n_min[1] + Last_Projected_Centroid_Point.at(2) * n_min[2];
-    double Last_Min_Dist = abs(Last_Projected_Point_Rho - (Min_Z - Octree_Resolution/2));
+    double Last_Min_Dist = (Min_Z - Octree_Resolution/2) - Last_Projected_Point_Rho;
 
     vector<double> Last_Projection_Vector;
     Last_Projection_Vector.push_back(Last_Min_Dist * n_min[0]);
@@ -3192,9 +3200,9 @@ void diane_octomap::Stair::ModelStair2D(double Octree_Resolution)
 
 
     vector<double> Last_Projected_Point;
-    Last_Projected_Point.push_back(Last_Projected_Centroid_Point.at(0) - Last_Projection_Vector.at(0));
-    Last_Projected_Point.push_back(Last_Projected_Centroid_Point.at(1) - Last_Projection_Vector.at(1));
-    Last_Projected_Point.push_back(Last_Projected_Centroid_Point.at(2) - Last_Projection_Vector.at(2));
+    Last_Projected_Point.push_back(Last_Projected_Centroid_Point.at(0) + Last_Projection_Vector.at(0));
+    Last_Projected_Point.push_back(Last_Projected_Centroid_Point.at(1) + Last_Projection_Vector.at(1));
+    Last_Projected_Point.push_back(Last_Projected_Centroid_Point.at(2) + Last_Projection_Vector.at(2));
 
 
     //Calculando o comprimento da escada e definindo a aresta inicial (inferior do 1o degrau)
@@ -3358,7 +3366,8 @@ void diane_octomap::Stair::ModelStair2DWithMatrix(double Octree_Resolution)
 
     //Projetando os dois pontos no plano que passa pela centróide do primeiro degrau
     double First_Point_Rho = Selected_Points.at(0).at(0) * n[0] + Selected_Points.at(0).at(1) * n[1] + Selected_Points.at(0).at(2) * n[2];
-    double First_Dist = abs(First_Point_Rho - First_Centroid_Rho);
+//    double First_Dist = abs(First_Point_Rho - First_Centroid_Rho);
+    double First_Dist = First_Centroid_Rho - First_Point_Rho;
 
     vector<double> First_Projection_Centroid_Vector;
     First_Projection_Centroid_Vector.push_back(First_Dist * n[0]);
@@ -3367,13 +3376,14 @@ void diane_octomap::Stair::ModelStair2DWithMatrix(double Octree_Resolution)
 
 
     vector<double> First_Projected_Centroid_Point;
-    First_Projected_Centroid_Point.push_back(Selected_Points.at(0).at(0) - First_Projection_Centroid_Vector.at(0));
-    First_Projected_Centroid_Point.push_back(Selected_Points.at(0).at(1) - First_Projection_Centroid_Vector.at(1));
-    First_Projected_Centroid_Point.push_back(Selected_Points.at(0).at(2) - First_Projection_Centroid_Vector.at(2));
+    First_Projected_Centroid_Point.push_back(Selected_Points.at(0).at(0) + First_Projection_Centroid_Vector.at(0));
+    First_Projected_Centroid_Point.push_back(Selected_Points.at(0).at(1) + First_Projection_Centroid_Vector.at(1));
+    First_Projected_Centroid_Point.push_back(Selected_Points.at(0).at(2) + First_Projection_Centroid_Vector.at(2));
 
 
     double Last_Point_Rho = Selected_Points.at(1).at(0) * n[0] + Selected_Points.at(1).at(1) * n[1] + Selected_Points.at(1).at(2) * n[2];
-    double Last_Dist = abs(Last_Point_Rho - First_Centroid_Rho);
+//    double Last_Dist = abs(Last_Point_Rho - First_Centroid_Rho);
+    double Last_Dist = First_Centroid_Rho - Last_Point_Rho;
 
     vector<double> Last_Projection_Centroid_Vector;
     Last_Projection_Centroid_Vector.push_back(Last_Dist * n[0]);
@@ -3382,9 +3392,9 @@ void diane_octomap::Stair::ModelStair2DWithMatrix(double Octree_Resolution)
 
 
     vector<double> Last_Projected_Centroid_Point;
-    Last_Projected_Centroid_Point.push_back(Selected_Points.at(1).at(0) - Last_Projection_Centroid_Vector.at(0));
-    Last_Projected_Centroid_Point.push_back(Selected_Points.at(1).at(1) - Last_Projection_Centroid_Vector.at(1));
-    Last_Projected_Centroid_Point.push_back(Selected_Points.at(1).at(2) - Last_Projection_Centroid_Vector.at(2));
+    Last_Projected_Centroid_Point.push_back(Selected_Points.at(1).at(0) + Last_Projection_Centroid_Vector.at(0));
+    Last_Projected_Centroid_Point.push_back(Selected_Points.at(1).at(1) + Last_Projection_Centroid_Vector.at(1));
+    Last_Projected_Centroid_Point.push_back(Selected_Points.at(1).at(2) + Last_Projection_Centroid_Vector.at(2));
 
 
     //Projetando os dois pontos resultantes no plano horizontal do menor nível detectado de escada (subtraindo metade da resolucao para chegar teoricamente ao chão)
@@ -3394,7 +3404,8 @@ void diane_octomap::Stair::ModelStair2DWithMatrix(double Octree_Resolution)
     n_min[2] = 1;
 
     double First_Projected_Point_Rho = First_Projected_Centroid_Point.at(0) * n_min[0] + First_Projected_Centroid_Point.at(1) * n_min[1] + First_Projected_Centroid_Point.at(2) * n_min[2];
-    double First_Min_Dist = abs(First_Projected_Point_Rho - (Min_Z - Octree_Resolution/2));
+//    double First_Min_Dist = abs(First_Projected_Point_Rho - (Min_Z - Octree_Resolution/2));
+    double First_Min_Dist = (Min_Z - Octree_Resolution/2) - First_Projected_Point_Rho;
 
     vector<double> First_Projection_Vector;
     First_Projection_Vector.push_back(First_Min_Dist * n_min[0]);
@@ -3403,13 +3414,14 @@ void diane_octomap::Stair::ModelStair2DWithMatrix(double Octree_Resolution)
 
 
     vector<double> First_Projected_Point;
-    First_Projected_Point.push_back(First_Projected_Centroid_Point.at(0) - First_Projection_Vector.at(0));
-    First_Projected_Point.push_back(First_Projected_Centroid_Point.at(1) - First_Projection_Vector.at(1));
-    First_Projected_Point.push_back(First_Projected_Centroid_Point.at(2) - First_Projection_Vector.at(2));
+    First_Projected_Point.push_back(First_Projected_Centroid_Point.at(0) + First_Projection_Vector.at(0));
+    First_Projected_Point.push_back(First_Projected_Centroid_Point.at(1) + First_Projection_Vector.at(1));
+    First_Projected_Point.push_back(First_Projected_Centroid_Point.at(2) + First_Projection_Vector.at(2));
 
 
     double Last_Projected_Point_Rho = Last_Projected_Centroid_Point.at(0) * n_min[0] + Last_Projected_Centroid_Point.at(1) * n_min[1] + Last_Projected_Centroid_Point.at(2) * n_min[2];
-    double Last_Min_Dist = abs(Last_Projected_Point_Rho - (Min_Z - Octree_Resolution/2));
+//    double Last_Min_Dist = abs(Last_Projected_Point_Rho - (Min_Z - Octree_Resolution/2));
+    double Last_Min_Dist = (Min_Z - Octree_Resolution/2) - Last_Projected_Point_Rho;
 
     vector<double> Last_Projection_Vector;
     Last_Projection_Vector.push_back(Last_Min_Dist * n_min[0]);
@@ -3418,9 +3430,9 @@ void diane_octomap::Stair::ModelStair2DWithMatrix(double Octree_Resolution)
 
 
     vector<double> Last_Projected_Point;
-    Last_Projected_Point.push_back(Last_Projected_Centroid_Point.at(0) - Last_Projection_Vector.at(0));
-    Last_Projected_Point.push_back(Last_Projected_Centroid_Point.at(1) - Last_Projection_Vector.at(1));
-    Last_Projected_Point.push_back(Last_Projected_Centroid_Point.at(2) - Last_Projection_Vector.at(2));
+    Last_Projected_Point.push_back(Last_Projected_Centroid_Point.at(0) + Last_Projection_Vector.at(0));
+    Last_Projected_Point.push_back(Last_Projected_Centroid_Point.at(1) + Last_Projection_Vector.at(1));
+    Last_Projected_Point.push_back(Last_Projected_Centroid_Point.at(2) + Last_Projection_Vector.at(2));
 
 
     //Calculando o comprimento da escada e definindo a aresta inicial (inferior do 1o degrau)
