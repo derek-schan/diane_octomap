@@ -16,7 +16,7 @@
 #include <std_msgs/UInt8.h>
 #include <std_srvs/Empty.h>
 
-
+#include <time.h>
 #include <boost/thread.hpp>
 
 #include <octomap/OcTree.h>
@@ -319,6 +319,13 @@ public:
     //A identificacão da escada será sobre o vetor de folhas contidas dentro do Bounding Box usando uma lógica em 2D
     void StairDetection2D();
 
+    vector<MatrixXf> GroupPlanesByXY(MatrixXf Leafs);
+
+
+
+    vector<MatrixXf> GroupPlanesByZ(vector<MatrixXf> Leafs);
+
+    void teste(vector<MatrixXf> Leafs);
 
     //Agrupando as folhas que possuem o mesmo Z (estão no mesmo nível) em grupos
     vector<MatrixXf> GroupPlanesByZ(MatrixXf Leafs);
@@ -350,7 +357,6 @@ public:
 
     //Gerando um único objeto Line para cada grupo de Line's que possuem o mesmo Rho e Theta (armazenando o min_Z e o max_Z em que essa cada Line ocorre)
     vector<Line*> MergeGroupedLines(vector<vector<Line*>> GroupedLines);
-
 
     //Populando cada Line obtido com as folhas que possuam Z dentro dos limites e que estejam à uma distância mínima da reta
     void PopulateLinesWithMatrix(vector<Line*>& Merged_Lines, vector<MatrixXf> Leaf_Groups_In_Matrix);

@@ -201,8 +201,14 @@ void diane_octomap::DianeOctomap::GetOccupiedLeafsOfBBX(OcTree* octree)
 
 void diane_octomap::DianeOctomap::StairDetection2D()
 {
+    double time_i = clock();
+    vector<MatrixXf> GroupedXY = GroupPlanesByXY(OccupiedPoints);
+
+    teste(GroupedXY);
+
+    vector<MatrixXf> Grouped_Leafs_In_Matrix = GroupPlanesByZ(GroupedXY);
     ///Armazenando e agrupando as folhas que possuem o mesmo Z
-    vector<MatrixXf> Grouped_Leafs_In_Matrix = GroupPlanesByZ(OccupiedPoints);
+//    vector<MatrixXf> Grouped_Leafs_In_Matrix = GroupPlanesByZ(OccupiedPoints);
 
 
     ///Hough - encontrando as retas em cada altura em Z
@@ -228,6 +234,7 @@ void diane_octomap::DianeOctomap::StairDetection2D()
     ///Executando um Merge para cada grupo que passou pelo filtro de ocorrências
     ///O Line final de cada grupo armazenará os Z's mínimo e máximo em que a linha, com o Rho e Theta descritos, ocorre.
     vector<diane_octomap::Line*> Merged_Lines = MergeGroupedLines(Filtered_Groups);
+
 
 
     ///Obtendo e armazenando em uma matriz as folhas pertencentes à cada Line (estão dentro dos limites de Z e estão dentro de uma distância tolerável escolhida)
@@ -276,12 +283,116 @@ void diane_octomap::DianeOctomap::StairDetection2D()
 
 //    WriteModeledStairPropertiesToFile(Modeled_Stairs.at(0));
 
+    double time_e = clock();
+    cout<< (time_e - time_i)/(CLOCKS_PER_SEC / 1000) <<endl;
     cout<<endl;
 
 }
 
 
+
+
 //-----------------------------------------Métodos utilizando Matriz-----------------------------------------------
+vector<MatrixXf> diane_octomap::DianeOctomap::GroupPlanesByXY(MatrixXf Leafs)
+{
+    vector<MatrixXf> GroupedXY;
+    for (int i = 0; i < Leafs.cols();++i)
+    {
+        bool group_not_found = true;
+
+        //Buscando o grupo da fiolha (mesmo Z)
+        for(int j = 0; j<GroupedXY.size() ; ++j)
+        {
+            if(GroupedXY.at(j)(0,0) == Leafs(0,i) && GroupedXY.at(j)(1,0) == Leafs(1,i))
+            {
+                GroupedXY.at(j).conservativeResize(3, GroupedXY.at(j).cols() +1);
+                GroupedXY.at(j)( 0 , GroupedXY.at(j).cols() - 1) = Leafs( 0 , i);
+                GroupedXY.at(j)( 1 , GroupedXY.at(j).cols() - 1) = Leafs( 1 , i);
+                GroupedXY.at(j)( 2 , GroupedXY.at(j).cols() - 1) = Leafs( 2 , i);
+                group_not_found = false;
+                break;
+            }
+        }
+
+        //Se não encontrou um grupo, cria um novo
+        if(group_not_found)
+        {
+            MatrixXf newMatrix2d = MatrixXf(3, 1);
+            newMatrix2d(0,0) = Leafs( 0 , i );
+            newMatrix2d(1,0) = Leafs( 1 , i );
+            newMatrix2d(2,0) = Leafs( 2 , i ) ;
+            GroupedXY.push_back(newMatrix2d);
+        }
+
+    }
+
+    return GroupedXY;
+}
+
+vector<MatrixXf> diane_octomap::DianeOctomap::GroupPlanesByZ(vector<MatrixXf> Leafs)
+{
+    vector<MatrixXf> Grouped2D;
+    for (int i=0; i < Leafs.size();++i )
+    {
+        if(Leafs.at(i).cols()>0 && Leafs.at(i).cols()<6 )
+        {
+            for(int k = 0; k < Leafs.at(i).cols();++k)
+            {
+                bool group_not_found = true;
+
+                //Buscando o grupo da fiolha (mesmo Z)
+                for(int j = 0; j<Grouped2D.size() ; ++j)
+                {
+                    if(Grouped2D.at(j)(2,0) == Leafs.at(i)(2,k))
+                    {
+                        Grouped2D.at(j).conservativeResize(3, Grouped2D.at(j).cols() +1);
+                        Grouped2D.at(j)( 0 , Grouped2D.at(j).cols() - 1) = Leafs.at(i)( 0 , k);
+                        Grouped2D.at(j)( 1 , Grouped2D.at(j).cols() - 1) = Leafs.at(i)( 1 , k);
+                        Grouped2D.at(j)( 2 , Grouped2D.at(j).cols() - 1) = Leafs.at(i)( 2 , k);
+                        group_not_found = false;
+                        break;
+                    }
+                }
+
+                //Se não encontrou um grupo, cria um novo
+                if(group_not_found)
+                {
+                    MatrixXf newMatrix2d = MatrixXf(3, 1);
+                    newMatrix2d(0,0) = Leafs.at(i)( 0 , k );
+                    newMatrix2d(1,0) = Leafs.at(i)( 1 , k );
+                    newMatrix2d(2,0) = Leafs.at(i)( 2 , k ) ;
+                    Grouped2D.push_back(newMatrix2d);
+                }
+            }
+        }
+    }
+    return Grouped2D;
+}
+
+void diane_octomap::DianeOctomap::teste(vector<MatrixXf> Leafs)
+{
+    ofstream stairfile("/home/rob/Dropbox/Projeto Final/Arquivos/teste.txt");
+    stairfile << "A = [";
+
+    for (int i=0; i<Leafs.size();++i)
+    {
+        if(Leafs.at(i).cols()>0 && Leafs.at(i).cols()<6)
+        {
+            for(int j=0; j<Leafs.at(i).cols(); j++)
+            {
+                stairfile << Leafs.at(i)(0, j) << ", " << Leafs.at(i)(1, j) << ", " << Leafs.at(i)(2, j) << ";";
+
+            }
+
+
+        }
+    }
+
+    stairfile << "];" << endl;
+    stairfile.close();
+}
+
+
 
 vector<MatrixXf> diane_octomap::DianeOctomap::GroupPlanesByZ(MatrixXf Leafs)
 {
@@ -583,6 +694,8 @@ vector<diane_octomap::Line*> diane_octomap::DianeOctomap::MergeGroupedLines(vect
     return Merged_Lines;
 
 }
+
+
 
 
 void diane_octomap::DianeOctomap::PopulateLinesWithMatrix(vector<diane_octomap::Line*>& Merged_Lines, vector<MatrixXf> Leaf_Groups_In_Matrix)
