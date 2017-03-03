@@ -23,10 +23,13 @@
 	<node pkg="tf" type="static_transform_publisher" name="simple_tf_laser_broadcaster_node" args="0 0 0 0 0 0 velodyne map 100" />
 	
 	
-	<node pkg="velodyne_driver" type="velodyne_node" name="velodyne_node" />
+	<node pkg="velodyne_driver" type="velodyne_node" name="velodyne_node" >
+		<param name="model" type="string" value="VLP16" />
+	</node>
 	<node pkg="velodyne_pointcloud" type="cloud_node" name="cloud_node" >
 		<param name="calibration" type="string" value="$(find velodyne_pointcloud)/params/64e_utexas.yaml" />
 		<param name="min_range" type="double" value="0.01" />
+
 	</node>
 
 
