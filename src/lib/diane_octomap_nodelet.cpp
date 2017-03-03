@@ -31,6 +31,10 @@ void diane_octomap::DianeOctomapNodelet::onInit()
     msgModeledStairAllPub = nodeHandle.advertise <diane_octomap::StairArrayInfo>(getName() + "/Modeled_Stairs_Info_All", 10);
 
 
+    //Publishers de Mensagens para o vídeo
+    msgFirstFilteredOccuppiedPointsPub = nodeHandle.advertise <visualization_msgs::MarkerArray> (getName() + "/first_filtered_occupied_cells", 1000, true);
+
+
     //Inicializando os Subscribers de Mensagens
     msgBoolSub = nodeHandle.subscribe <std_msgs::Bool> ("/bool_msg", 10, &DianeOctomapNodelet::TreatBoolCallBack, this);
     msgOctomapFullMapSub = nodeHandle.subscribe <Octomap> ("/octomap_full", 10, &DianeOctomapNodelet::TreatOctomapFullMapCallback, this);
@@ -369,10 +373,88 @@ void diane_octomap::DianeOctomapNodelet::PublishAllStairsModel(vector<Stair*> Mo
 }
 
 
+
+//Publicando um MarkerArray com os voxels ocupados
+void diane_octomap::DianeOctomapNodelet::PublishFirstFilteredOccupiedPoints()
+{
+    size_t FilteredSize = First_Filtered_Points.cols();
+    if (FilteredSize <= 1)
+    {
+        ROS_WARN("Nothing to publish, first filtered occupied points array is empty");
+        return;
+    }
+
+    // init markers of occupied voxels:
+    visualization_msgs::MarkerArray FirstFilterOccupiedNodesVis;
+
+    //Only has one array:
+    FirstFilterOccupiedNodesVis.markers.resize(1);
+
+    //Configuring the color
+    std_msgs::ColorRGBA _color; _color.r = (0.0); _color.g = (0.0); _color.b = (1.0); _color.a = 1.0;
+
+    //Completing the FirstFilterOccupiedNodesVis MarkerArray
+    for(int i=0; i<First_Filtered_Points.cols(); ++i)
+    {
+        double x = First_Filtered_Points(0, i);
+        double y = First_Filtered_Points(1, i);
+        double z = First_Filtered_Points(2, i);
+
+        //create marker:
+        geometry_msgs::Point cubeCenter;
+        cubeCenter.x = x;
+        cubeCenter.y = y;
+        cubeCenter.z = z;
+
+        FirstFilterOccupiedNodesVis.markers[0].points.push_back(cubeCenter);
+
+        //Definindo a cor (Branco somente para visualizacão)
+        FirstFilterOccupiedNodesVis.markers[0].colors.push_back(_color);
+    }
+
+    ros::Time rostime = ros::Time::now();
+
+    for(unsigned int j=0; j < FirstFilterOccupiedNodesVis.markers.size(); ++j)
+    {
+        //Obtendo a quantidade de voxels na octree na profundidade indicada
+        double size = First_Filtered_Points.cols();
+
+        FirstFilterOccupiedNodesVis.markers[j].header.frame_id = "/map";
+        FirstFilterOccupiedNodesVis.markers[j].header.stamp = rostime;
+        FirstFilterOccupiedNodesVis.markers[j].ns = "map";
+        FirstFilterOccupiedNodesVis.markers[j].id = j;
+        FirstFilterOccupiedNodesVis.markers[j].type = visualization_msgs::Marker::CUBE_LIST;
+        FirstFilterOccupiedNodesVis.markers[j].scale.x = 0.05;
+        FirstFilterOccupiedNodesVis.markers[j].scale.y = 0.05;
+        FirstFilterOccupiedNodesVis.markers[j].scale.z = 0.05;
+
+        if(FirstFilterOccupiedNodesVis.markers[j].points.size() > 0)
+        {
+            FirstFilterOccupiedNodesVis.markers[j].action = visualization_msgs::Marker::ADD;
+        }
+        else
+        {
+            FirstFilterOccupiedNodesVis.markers[j].action = visualization_msgs::Marker::DELETE;
+        }
+
+    }
+
+
+    msgFirstFilteredOccuppiedPointsPub.publish(FirstFilterOccupiedNodesVis);
+
+}
+
+
+
+
+
 void diane_octomap::DianeOctomapNodelet::TreatBoolCallBack(const std_msgs::Bool::ConstPtr& msg)
 {
     //Publishing the occupied voxels of the octree stored.
     PublishOccupiedMarker();
+
+    //Publishing the first filtered occupied voxels.
+    PublishFirstFilteredOccupiedPoints();
 
 
     if(Modeled_Stairs.size() > 0)

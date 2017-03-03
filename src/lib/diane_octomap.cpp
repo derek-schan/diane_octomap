@@ -44,6 +44,10 @@ diane_octomap::DianeOctomap::DianeOctomap()
 
     OccupiedPoints = MatrixXf();
 
+
+
+    First_Filtered_Points = MatrixXf();
+
 }
 
 
@@ -106,11 +110,11 @@ void diane_octomap::DianeOctomap::GenerateOcTreeFromFile()
 //    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_3.ot";
 
 //    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_5.ot";
-//    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_5.ot";
+    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_5.ot";
 //    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_5_2.ot";
 
 //    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Principal_5.ot";
-    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_LEAD_5.ot";
+//    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_LEAD_5.ot";
 
 
 //    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_7.ot";
@@ -312,7 +316,7 @@ vector<MatrixXf> diane_octomap::DianeOctomap::GroupPlanesByXY(MatrixXf Leafs)
     {
         bool group_not_found = true;
 
-        //Buscando o grupo da folha (mesmo Z)
+        //Buscando o grupo da folha (mesmo par (X,Y))
         for(int j = 0; j<GroupedXY.size() ; ++j)
         {
             if(GroupedXY.at(j)(0,0) == Leafs(0,i) && GroupedXY.at(j)(1,0) == Leafs(1,i))
@@ -345,12 +349,25 @@ vector<MatrixXf> diane_octomap::DianeOctomap::GroupPlanesByZ(vector<MatrixXf> Le
 {
     vector<MatrixXf> Grouped2D;
 
+    First_Filtered_Points.conservativeResize(3, octree->getNumLeafNodes());
+
+    int First_Filtered_Count = 0;
+
+
     for (int i=0; i < Leafs.size();++i )
     {
         if(Leafs.at(i).cols()>0 && Leafs.at(i).cols()<6 )
         {
             for(int k = 0; k < Leafs.at(i).cols();++k)
             {
+                //Adicionando a folha na estrutura referente para o vídeo
+                First_Filtered_Points(0, First_Filtered_Count) = (double)Leafs.at(i)(0, k);
+                First_Filtered_Points(1, First_Filtered_Count) = (double)Leafs.at(i)(1, k);
+                First_Filtered_Points(2, First_Filtered_Count) = (double)Leafs.at(i)(2, k);
+
+                ++First_Filtered_Count;
+
+
                 bool group_not_found = true;
 
                 //Buscando o grupo da fiolha (mesmo Z)
@@ -379,6 +396,10 @@ vector<MatrixXf> diane_octomap::DianeOctomap::GroupPlanesByZ(vector<MatrixXf> Le
             }
         }
     }
+
+    First_Filtered_Points.conservativeResize(3, First_Filtered_Count);
+
+
     return Grouped2D;
 }
 

@@ -238,6 +238,15 @@ protected:
     MatrixXf OccupiedPoints;
 
 
+
+    ///Variáveis utilizadas para publicar o passo a passo
+    MatrixXf First_Filtered_Points;
+
+
+
+
+
+
     ///Variáveis referentes à Transformada de Hough (2D e 3D)
     double Rho_Min;
     double Rho_Max;
