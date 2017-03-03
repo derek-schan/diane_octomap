@@ -55,6 +55,10 @@ class DianeOctomapNodelet : public DianeOctomap, public nodelet::Nodelet
      ros::Publisher msgModeledStairAllPub;
 
 
+     //Declarando os Publishers das Mensagens para o vídeo
+     ros::Publisher msgFirstFilteredOccuppiedPointsPub;
+
+
 
      //Declarando os Subscribers de Mensagens
      ros::Subscriber msgBoolSub;
@@ -82,6 +86,10 @@ class DianeOctomapNodelet : public DianeOctomap, public nodelet::Nodelet
      void PublishStairModel(Stair* Modeled_Stair);
 
      void PublishAllStairsModel(vector<Stair*> Modeled_Stairs);
+
+
+     //Métodos de Publicacão para o Vídeo
+     void PublishFirstFilteredOccupiedPoints();
 
 
      //Métodos de Callback
