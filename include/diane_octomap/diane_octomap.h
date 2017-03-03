@@ -332,8 +332,6 @@ public:
 
     vector<MatrixXf> GroupPlanesByZ(vector<MatrixXf> Leafs);
 
-    void teste(vector<MatrixXf> Leafs);
-
     //Agrupando as folhas que possuem o mesmo Z (estão no mesmo nível) em grupos
     vector<MatrixXf> GroupPlanesByZ(MatrixXf Leafs);
 

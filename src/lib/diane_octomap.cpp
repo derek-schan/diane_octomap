@@ -37,8 +37,8 @@ diane_octomap::DianeOctomap::DianeOctomap()
 
     ///Definindo características padrões de uma escada
     Min_Num_Steps = 3;      //3
-    Min_Step_Width = 0.25;  //0.25
-    Max_Step_Width = 0.35;  //0.35
+    Min_Step_Width = 0.23;  //0.25
+    Max_Step_Width = 0.38;  //0.35
     Min_Step_Height = 0.09; //0.09
     Max_Step_Height = 0.20; //0.20
 
@@ -106,8 +106,12 @@ void diane_octomap::DianeOctomap::GenerateOcTreeFromFile()
 //    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_3.ot";
 
 //    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_5.ot";
-    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_5.ot";
+//    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_5.ot";
 //    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_5_2.ot";
+
+//    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Principal_5.ot";
+    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_LEAD_5.ot";
+
 
 //    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_7.ot";
 //    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_7.ot";
@@ -165,14 +169,14 @@ void diane_octomap::DianeOctomap::GenerateOcTreeFromFile()
 void diane_octomap::DianeOctomap::GetOccupiedLeafsOfBBX(OcTree* octree)
 {
     point3d min;
-    min.x() = -5;
-    min.y() = -5;
-    min.z() = 0.05;
+    min.x() = -5;   //-5
+    min.y() = -5;   //-5
+    min.z() = 0.05;  //0.05
 
     point3d max;
-    max.x() = 5;
-    max.y() = 100;
-    max.z() = 100;
+    max.x() = 5;    //5
+    max.y() = 100;  //100
+    max.z() = 100;  //100
 
 
     OccupiedPoints.conservativeResize(3, octree->getNumLeafNodes());
@@ -212,8 +216,6 @@ void diane_octomap::DianeOctomap::StairDetection2D()
     double time_i = clock();
     vector<MatrixXf> GroupedXY = GroupPlanesByXY(OccupiedPoints);
 
-    teste(GroupedXY);
-
     vector<MatrixXf> Grouped_Leafs_In_Matrix = GroupPlanesByZ(GroupedXY);
     ///Armazenando e agrupando as folhas que possuem o mesmo Z
 //    vector<MatrixXf> Grouped_Leafs_In_Matrix = GroupPlanesByZ(OccupiedPoints);
@@ -234,7 +236,7 @@ void diane_octomap::DianeOctomap::StairDetection2D()
     vector<vector<diane_octomap::Line*>> GroupLinesByRhoTheta = GroupLineByRhoTheta(Lines);
 
 
-    int min_num_line = 3;   //3
+    int min_num_line = 2;   //3
     int max_num_line = 6;   //6
     ///Filtrando os grupos de Line's pela quantidade de vezes em que ocorreram.
     //(Se aparecer muitas vezes, deve ser uma parede. Se apareceu pouco, deve ser um ruído --- Os limites devem variar de acordo com a resolucão do octomap)
@@ -310,7 +312,7 @@ vector<MatrixXf> diane_octomap::DianeOctomap::GroupPlanesByXY(MatrixXf Leafs)
     {
         bool group_not_found = true;
 
-        //Buscando o grupo da fiolha (mesmo Z)
+        //Buscando o grupo da folha (mesmo Z)
         for(int j = 0; j<GroupedXY.size() ; ++j)
         {
             if(GroupedXY.at(j)(0,0) == Leafs(0,i) && GroupedXY.at(j)(1,0) == Leafs(1,i))
@@ -342,6 +344,7 @@ vector<MatrixXf> diane_octomap::DianeOctomap::GroupPlanesByXY(MatrixXf Leafs)
 vector<MatrixXf> diane_octomap::DianeOctomap::GroupPlanesByZ(vector<MatrixXf> Leafs)
 {
     vector<MatrixXf> Grouped2D;
+
     for (int i=0; i < Leafs.size();++i )
     {
         if(Leafs.at(i).cols()>0 && Leafs.at(i).cols()<6 )
@@ -378,30 +381,6 @@ vector<MatrixXf> diane_octomap::DianeOctomap::GroupPlanesByZ(vector<MatrixXf> Le
     }
     return Grouped2D;
 }
-
-void diane_octomap::DianeOctomap::teste(vector<MatrixXf> Leafs)
-{
-    ofstream stairfile("/home/rob/Dropbox/Projeto Final/Arquivos/teste.txt");
-    stairfile << "A = [";
-
-    for (int i=0; i<Leafs.size();++i)
-    {
-        if(Leafs.at(i).cols()>0 && Leafs.at(i).cols()<6)
-        {
-            for(int j=0; j<Leafs.at(i).cols(); j++)
-            {
-                stairfile << Leafs.at(i)(0, j) << ", " << Leafs.at(i)(1, j) << ", " << Leafs.at(i)(2, j) << ";";
-
-            }
-
-
-        }
-    }
-
-    stairfile << "];" << endl;
-    stairfile.close();
-}
-
 
 
 vector<MatrixXf> diane_octomap::DianeOctomap::GroupPlanesByZ(MatrixXf Leafs)
@@ -813,7 +792,7 @@ vector<diane_octomap::Line*> diane_octomap::DianeOctomap::SegmentLinesWithMatrix
         Accessed_Line->SortLeafMatrixByX();
 
 
-        double Tolerance_X = 0.11;
+        double Tolerance_X = 0.11; //0.11
 
         //Para cada folha, verifica se a distância em X para a próxima ultrapassa a tolerância
         for(int j=0; j<Accessed_Line->Leafs_Of_Line.cols() - 1; j++)
@@ -939,9 +918,8 @@ vector<vector<diane_octomap::Line*>> diane_octomap::DianeOctomap::GroupLinesByTh
                 double temp_max_X = line->max_X - (dist*line_normal[0]);
 
 
-
                 //Se as distâncias entre os mínimos dos intervalos e entre os máximos dos intervalos estiverem dentro da tolerância, adiciona a nova linha nesse grupo
-                double X_Tolerance = 0.11; //0.11
+                double X_Tolerance = 0.40; //0.11
 
                 if((fabs(temp_min_X - Groups_Lines.at(j).at(0)->min_X) <= X_Tolerance) && (fabs(temp_max_X - Groups_Lines.at(j).at(0)->max_X) <= X_Tolerance))
                 {
@@ -1420,7 +1398,7 @@ vector<diane_octomap::Stair*> diane_octomap::DianeOctomap::ModelStairsWithMatrix
 
 
         //Aplicando um filtro de padrões de escada
-        if((stair->Step_Height >= 0.14) && (stair->Step_Height <= 0.23) && (stair->Step_Width >= 0.27) && (stair->Step_Width <= 0.32))
+        if((stair->Step_Height >= 0.14) && (stair->Step_Height <= 0.23) && (stair->Step_Width >= 0.24) && (stair->Step_Width <= 0.36))
         {
             Modeled_Stairs.push_back(stair);
         }
@@ -3712,7 +3690,7 @@ void diane_octomap::Line::UpdateLineParametersWithMinSquare()
     NewLineTheta = atan((-1)*(Line_Coef(0,0)/Line_Coef(1,0))/(Line_Coef(0,0))) * 180/M_PI;
     NewLineRho = Line_Coef(0,0)*sin(NewLineTheta * M_PI/180);
 
-    //Caso o RHo calculado dê negativo, altera o Rho e Theta
+    //Caso o Rho calculado dê negativo, altera o Rho e Theta
     if(NewLineRho < 0)
     {
         NewLineRho = abs(NewLineRho);
