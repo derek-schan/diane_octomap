@@ -58,7 +58,7 @@ class DianeOctomapNodelet : public DianeOctomap, public nodelet::Nodelet
      //Declarando os Publishers das Mensagens para o vídeo
      ros::Publisher msgFirstFilteredOccuppiedPointsPub;
 
-
+     ros::Publisher msgStairModelPoints;
 
      //Declarando os Subscribers de Mensagens
      ros::Subscriber msgBoolSub;

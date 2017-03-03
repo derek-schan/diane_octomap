@@ -20,9 +20,9 @@ void diane_octomap::DianeOctomapNodelet::onInit()
 
 
     //Inicializando os Publishers de Mensagens
-    msgOctomapFullMapPub = nodeHandle.advertise <Octomap> (getName() + "/octomap_full", 1000, true);
-    msgOctomapOccupiedMarkerPub = nodeHandle.advertise <visualization_msgs::MarkerArray> (getName() + "/occupied_cells_vis_array", 1000, true);
-    msgOctomapFreeMarkerPub = nodeHandle.advertise <visualization_msgs::MarkerArray> (getName() + "/free_cells_vis_array", 1000, true);
+    msgOctomapFullMapPub = nodeHandle.advertise <Octomap> (getName() + "/octomap_full", 10, true);
+    msgOctomapOccupiedMarkerPub = nodeHandle.advertise <visualization_msgs::MarkerArray> (getName() + "/occupied_cells_vis_array", 10, true);
+    msgOctomapFreeMarkerPub = nodeHandle.advertise <visualization_msgs::MarkerArray> (getName() + "/free_cells_vis_array", 10, true);
 
     msgModeledStairVisualPub = nodeHandle.advertise<visualization_msgs::Marker>(getName() + "/Modeled_Stairs_Visualization_Markers", 10);
 
@@ -32,8 +32,9 @@ void diane_octomap::DianeOctomapNodelet::onInit()
 
 
     //Publishers de Mensagens para o vídeo
-    msgFirstFilteredOccuppiedPointsPub = nodeHandle.advertise <visualization_msgs::MarkerArray> (getName() + "/first_filtered_occupied_cells", 1000, true);
+    msgFirstFilteredOccuppiedPointsPub = nodeHandle.advertise <visualization_msgs::MarkerArray> (getName() + "/first_filtered_occupied_cells", 10, true);
 
+    msgStairModelPoints = nodeHandle.advertise <visualization_msgs::MarkerArray> (getName() + "/Stair_Model_Points", 10, true);
 
     //Inicializando os Subscribers de Mensagens
     msgBoolSub = nodeHandle.subscribe <std_msgs::Bool> ("/bool_msg", 10, &DianeOctomapNodelet::TreatBoolCallBack, this);
@@ -83,6 +84,8 @@ void diane_octomap::DianeOctomapNodelet::PublishOccupiedMarker()
     visualization_msgs::MarkerArray occupiedNodesVis;
     // each array stores all cubes of a different size, one for each depth level:
     occupiedNodesVis.markers.resize(octree->getTreeDepth() + 1);
+
+
 
     // now, traverse all leafs in the tree e completando o OccupiedMarker:
     std_msgs::ColorRGBA _color; _color.r = (1.0); _color.g = (1.0); _color.b = (1.0); _color.a = 1.0;
@@ -149,6 +152,8 @@ void diane_octomap::DianeOctomapNodelet::PublishOccupiedMarker()
     msgOctomapOccupiedMarkerPub.publish(occupiedNodesVis);
 
 }
+
+
 
 
 //Publicando os Markers que definem os Modelos de Escada detectados
@@ -245,10 +250,83 @@ void diane_octomap::DianeOctomapNodelet::PublishStairModelsVisual(vector<diane_o
 
         msgModeledStairVisualPub.publish(line_list);
     }
+
+
+
     else
     {
         ROS_WARN("Nothing to publish! No stairs detected on the map.");
     }
+
+
+
+
+    size_t FilteredSize = First_Filtered_Points.cols();
+    if (FilteredSize <= 1)
+    {
+        ROS_WARN("Nothing to publish, first filtered occupied points array is empty");
+        return;
+    }
+
+    // init markers of occupied voxels:
+    visualization_msgs::MarkerArray StairModelPoints;
+
+    //Only has one array:
+    StairModelPoints.markers.resize(1);
+
+    //Configuring the color
+    std_msgs::ColorRGBA _color; _color.r = (0.0); _color.g = (1.0); _color.b = (0.0); _color.a = 1.0;
+
+    //Completing the StairModelPoints MarkerArray
+    for(int i=0; i<Modeled_Stairs.at(1)->Leafs_Of_Stair.cols(); ++i)
+    {
+        float x = Modeled_Stairs.at(1)->Leafs_Of_Stair(0, i);
+        float y = Modeled_Stairs.at(1)->Leafs_Of_Stair(1, i);
+        float z = Modeled_Stairs.at(1)->Leafs_Of_Stair(2, i);
+
+        //create marker:
+        geometry_msgs::Point cubeCenter;
+        cubeCenter.x = x;
+        cubeCenter.y = y;
+        cubeCenter.z = z;
+
+        StairModelPoints.markers[0].points.push_back(cubeCenter);
+
+        //Definindo a cor (Branco somente para visualizacão)
+        StairModelPoints.markers[0].colors.push_back(_color);
+    }
+
+    ros::Time rostime = ros::Time::now();
+
+    for(unsigned int j=0; j < StairModelPoints.markers.size(); ++j)
+    {
+        //Obtendo a quantidade de voxels na octree na profundidade indicada
+        double size = Modeled_Stairs.at(1)->Leafs_Of_Stair.cols();
+
+        StairModelPoints.markers[j].header.frame_id = "/map";
+        StairModelPoints.markers[j].header.stamp = rostime;
+        StairModelPoints.markers[j].ns = "map";
+        StairModelPoints.markers[j].id = j;
+        StairModelPoints.markers[j].type = visualization_msgs::Marker::CUBE_LIST;
+        StairModelPoints.markers[j].scale.x = 0.05;
+        StairModelPoints.markers[j].scale.y = 0.05;
+        StairModelPoints.markers[j].scale.z = 0.05;
+
+        if(StairModelPoints.markers[j].points.size() > 0)
+        {
+            StairModelPoints.markers[j].action = visualization_msgs::Marker::ADD;
+        }
+        else
+        {
+            StairModelPoints.markers[j].action = visualization_msgs::Marker::DELETE;
+        }
+
+    }
+
+
+    msgStairModelPoints.publish(StairModelPoints);
+
+
 
 }
 
