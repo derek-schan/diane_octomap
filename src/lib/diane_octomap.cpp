@@ -27,7 +27,7 @@ diane_octomap::DianeOctomap::DianeOctomap()
 
 
     ///Definindo as tolerâncias para o merge dos objetos Line's (Se a distância estiver dentro da tolerância, aplica o merge)
-    delta_merge_Rho = 0.11; //0.1
+    delta_merge_Rho = 0.11; //0.11
 
 //    ///Definindo as tolerâncias para o merge dos Planos detectados (Somente utilizado no 3D)
 //    delta_Rho = 0.1;
@@ -110,8 +110,10 @@ void diane_octomap::DianeOctomap::GenerateOcTreeFromFile()
 //    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_3.ot";
 
 //    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_5.ot";
-    string otFileName = "/home/rob/catkin_ws/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_5.ot";
+//    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_5.ot";
 //    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_5_2.ot";
+
+    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_video_objetos_5_final.ot";
 
 //    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Principal_5.ot";
 //    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_LEAD_5.ot";
@@ -175,7 +177,7 @@ void diane_octomap::DianeOctomap::GetOccupiedLeafsOfBBX(OcTree* octree)
     point3d min;
     min.x() = -5;   //-5
     min.y() = -5;   //-5
-    min.z() = 0.05;  //0.05
+    min.z() = 0.20;  //0.05
 
     point3d max;
     max.x() = 5;    //5
@@ -235,6 +237,49 @@ void diane_octomap::DianeOctomap::StairDetection2D()
     vector<vector<diane_octomap::Line*>> Lines = LineHoughTransform(Space_Length, Space_Width, Grouped_Leafs_In_Matrix);
 
 
+    //Obtendo os pontos para plot das linhas do Hough para o vídeo
+    for (int i=0; i<Lines.size(); i++)
+    {
+        for(int j=0; j<Lines.at(i).size(); j++)
+        {
+            Line* line = Lines.at(i).at(j);
+
+            //Calculando o "a" da reta e um ponto da reta
+            float a;
+
+            if(line->Line_Theta > 90 && line->Line_Theta < 270)
+            {
+                a = tan((270 - line->Line_Theta) * (M_PI/180));
+            }
+            else
+            {
+                a = tan((90 + line->Line_Theta) * (M_PI/180));
+            }
+
+            float p_x = line->Line_Rho * cos(line->Line_Theta * M_PI/180);
+            float p_y = line->Line_Rho * sin(line->Line_Theta * M_PI/180);
+
+
+            //Calculando os pontos iniciais e finais
+
+            MatrixXf LinePoints = MatrixXf(3, 2);
+
+            LinePoints(0,0) = x_min;
+            LinePoints(1,0) = p_y + a*(x_min - p_x);
+            LinePoints(2,0) = line->Line_Z;
+
+            LinePoints(0,1) = x_max;
+            LinePoints(1,1) = p_y + a*(x_max - p_x);
+            LinePoints(2,1) = line->Line_Z;
+
+            HoughLinesPoints.push_back(LinePoints);
+
+        }
+
+    }
+
+
+
     ///Agrupando os Line's encontrados (de todos os grupos) por Rho e Theta
     ///Para identificar quantas vezes cada linha ocorre
     vector<vector<diane_octomap::Line*>> GroupLinesByRhoTheta = GroupLineByRhoTheta(Lines);
@@ -245,6 +290,49 @@ void diane_octomap::DianeOctomap::StairDetection2D()
     ///Filtrando os grupos de Line's pela quantidade de vezes em que ocorreram.
     //(Se aparecer muitas vezes, deve ser uma parede. Se apareceu pouco, deve ser um ruído --- Os limites devem variar de acordo com a resolucão do octomap)
     vector<vector<diane_octomap::Line*>> Filtered_Groups = FilterGroups(GroupLinesByRhoTheta, min_num_line, max_num_line);
+
+
+    //Obtendo os pontos para plot das linhas filtradas para o vídeo
+    for(int k=0; k<Filtered_Groups.size(); k++)
+    {
+        for(int l=0; l<Filtered_Groups.at(k).size(); l++)
+        {
+            Line* line = Filtered_Groups.at(k).at(l);
+
+            //Calculando o "a" da reta e um ponto da reta
+            float a;
+
+            if(line->Line_Theta > 90 && line->Line_Theta < 270)
+            {
+                a = tan((270 - line->Line_Theta) * (M_PI/180));
+            }
+            else
+            {
+                a = tan((90 + line->Line_Theta) * (M_PI/180));
+            }
+
+            float p_x = line->Line_Rho * cos(line->Line_Theta * M_PI/180);
+            float p_y = line->Line_Rho * sin(line->Line_Theta * M_PI/180);
+
+
+            //Calculando os pontos iniciais e finais
+
+            MatrixXf LinePoints = MatrixXf(3, 2);
+
+            LinePoints(0,0) = x_min;
+            LinePoints(1,0) = p_y + a*(x_min - p_x);
+            LinePoints(2,0) = line->Line_Z;
+
+            LinePoints(0,1) = x_max;
+            LinePoints(1,1) = p_y + a*(x_max - p_x);
+            LinePoints(2,1) = line->Line_Z;
+
+            FilteredHoughLinesPoints.push_back(LinePoints);
+
+        }
+
+    }
+
 
 
     ///Executando um Merge para cada grupo que passou pelo filtro de ocorrências
@@ -275,6 +363,7 @@ void diane_octomap::DianeOctomap::StairDetection2D()
         }
     }
 
+
     ///Para cada grupo de Line's, aplicando um merge por Rho
     //Retas em um grupo possuem o mesmo Theta e se possuírem Rho's parecidos, são considerados o mesmo Line.
     //Cada novo Line sofre uma média ponderada utilizando os votos de cada Line, para o cálculo do novo Rho.
@@ -283,6 +372,85 @@ void diane_octomap::DianeOctomap::StairDetection2D()
 
     ///Buscando uma sequência válida que seria referente à uma escada
     vector<vector<Line*>> Filtered_Sequence = SequenceFilter(Merged_Segmented_Groups);
+
+
+
+    //Obtendo os pontos para plot dos segmentos de linhas sequenciadas e filtradas para o vídeo
+    for(int m=0; m<Filtered_Sequence.size(); m++)
+    {
+        for(int n=0; n<Filtered_Sequence.at(m).size(); n++)
+        {
+            Line* line = Filtered_Sequence.at(m).at(n);
+
+            //Calculando o "a" da reta e um ponto da reta
+            float a;
+
+            if(line->Line_Theta > 90 && line->Line_Theta < 270)
+            {
+                a = tan((270 - line->Line_Theta) * (M_PI/180));
+            }
+            else
+            {
+                a = tan((90 + line->Line_Theta) * (M_PI/180));
+            }
+
+            float p_x = line->Line_Rho * cos(line->Line_Theta * M_PI/180);
+            float p_y = line->Line_Rho * sin(line->Line_Theta * M_PI/180);
+
+
+            //Selecionando o mínimo e o máximo X presente na Line.
+            float Min_X, Max_X;
+
+            Min_X = line->Leafs_Of_Line(0, 0);
+            Max_X = line->Leafs_Of_Line(0, line->Leafs_Of_Line.cols() - 1);
+
+
+
+            //Calculando os pontos iniciais e finais
+            if(fabs((line->max_Z - line->min_Z)) < 0.40)
+            {
+                for(int o=0; o<=round(fabs((line->max_Z - line->min_Z))/0.05); ++o)
+                {
+                    MatrixXf LinePoints = MatrixXf(3, 2);
+
+                    LinePoints(0,0) = Min_X;
+                    LinePoints(1,0) = p_y + a*(Min_X - p_x);
+                    LinePoints(2,0) = line->min_Z + 0.05*o;
+
+                    LinePoints(0,1) = Max_X;
+                    LinePoints(1,1) = p_y + a*(Max_X - p_x);
+                    LinePoints(2,1) = line->min_Z + 0.05*o;
+
+                    SequencedLinesSegmentsPoints.push_back(LinePoints);
+
+                }
+
+            }
+            else
+            {
+                for(int p=0; p<4; ++p)
+                {
+                    MatrixXf LinePoints = MatrixXf(3, 2);
+
+                    LinePoints(0,0) = Min_X;
+                    LinePoints(1,0) = p_y + a*(Min_X - p_x);
+                    LinePoints(2,0) = line->max_Z - 0.05*p;
+
+                    LinePoints(0,1) = Max_X;
+                    LinePoints(1,1) = p_y + a*(Max_X - p_x);
+                    LinePoints(2,1) = line->max_Z - 0.05*p;
+
+                    SequencedLinesSegmentsPoints.push_back(LinePoints);
+
+                }
+
+            }
+
+        }
+
+    }
+
+
 
 
     ///Criando os candidatos à escada, à partir dos grupos de Line's.
@@ -473,6 +641,11 @@ vector<double> diane_octomap::DianeOctomap::GetSpaceParameters(MatrixXf Leafs)
 
     double length = max_x - min_x;
     double width = max_y - min_y;
+
+    x_min = min_x;
+    x_max = max_x;
+    y_min = min_y;
+    y_max = max_y;
 
     result.push_back(length);
     result.push_back(width);
@@ -940,7 +1113,7 @@ vector<vector<diane_octomap::Line*>> diane_octomap::DianeOctomap::GroupLinesByTh
 
 
                 //Se as distâncias entre os mínimos dos intervalos e entre os máximos dos intervalos estiverem dentro da tolerância, adiciona a nova linha nesse grupo
-                double X_Tolerance = 0.40; //0.11
+                double X_Tolerance = 0.15; //0.11
 
                 if((fabs(temp_min_X - Groups_Lines.at(j).at(0)->min_X) <= X_Tolerance) && (fabs(temp_max_X - Groups_Lines.at(j).at(0)->max_X) <= X_Tolerance))
                 {
@@ -1288,7 +1461,7 @@ bool diane_octomap::DianeOctomap::VerifyLineSequence(vector<Line*> Group_Lines)
 {
     vector<double> Rhos;
 //    double dist = 0.35;
-    double Tol_Z = 0.10; //0.10
+    double Tol_Z = 0.30; //0.10
 
     double minZFirstStep = Group_Lines.at(0)->min_Z;
 

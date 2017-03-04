@@ -242,8 +242,13 @@ protected:
     ///Variáveis utilizadas para publicar o passo a passo
     MatrixXf First_Filtered_Points;
 
+    float x_min, x_max, y_min, y_max;
 
+    vector<MatrixXf> HoughLinesPoints;
 
+    vector<MatrixXf> FilteredHoughLinesPoints;
+
+    vector<MatrixXf> SequencedLinesSegmentsPoints;
 
 
 

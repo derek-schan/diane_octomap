@@ -32,9 +32,16 @@ void diane_octomap::DianeOctomapNodelet::onInit()
 
 
     //Publishers de Mensagens para o vídeo
-    msgFirstFilteredOccuppiedPointsPub = nodeHandle.advertise <visualization_msgs::MarkerArray> (getName() + "/first_filtered_occupied_cells", 10, true);
+    msgFirstFilteredOccuppiedPointsPub = nodeHandle.advertise <visualization_msgs::MarkerArray> (getName() + "/First_Filtered_Points", 10, true);
 
-    msgStairModelPoints = nodeHandle.advertise <visualization_msgs::MarkerArray> (getName() + "/Stair_Model_Points", 10, true);
+    msgHoughLinesPub = nodeHandle.advertise <visualization_msgs::Marker> (getName() + "/Hough_Lines", 1000, true);
+
+    msgFilteredHoughLinesPub = nodeHandle.advertise <visualization_msgs::Marker> (getName() + "/Filtered_Hough_Lines", 1000, true);
+
+    msgSequencedLinesSegmentsPub = nodeHandle.advertise <visualization_msgs::Marker> (getName() + "/Sequenced_Lines_Segments", 1000, true);
+
+    msgStairModelPointsPub = nodeHandle.advertise <visualization_msgs::MarkerArray> (getName() + "/Stair_Model_Points", 10, true);
+
 
     //Inicializando os Subscribers de Mensagens
     msgBoolSub = nodeHandle.subscribe <std_msgs::Bool> ("/bool_msg", 10, &DianeOctomapNodelet::TreatBoolCallBack, this);
@@ -185,7 +192,8 @@ void diane_octomap::DianeOctomapNodelet::PublishStairModelsVisual(vector<diane_o
         // Line list is red
         line_list.color.r = 1.0;
         line_list.color.a = 1.0;
-        for(int j = 0; j < Modeled_Stairs.size() ; ++j)
+//        for(int j = 0; j < Modeled_Stairs.size() ; ++j)
+        for(int j = 1; j < 2 ; ++j)
         {
             for (int i = 0; i < Modeled_Stairs.at(j)->Points.size(); ++i)
             {
@@ -257,75 +265,6 @@ void diane_octomap::DianeOctomapNodelet::PublishStairModelsVisual(vector<diane_o
     {
         ROS_WARN("Nothing to publish! No stairs detected on the map.");
     }
-
-
-
-
-    size_t FilteredSize = First_Filtered_Points.cols();
-    if (FilteredSize <= 1)
-    {
-        ROS_WARN("Nothing to publish, first filtered occupied points array is empty");
-        return;
-    }
-
-    // init markers of occupied voxels:
-    visualization_msgs::MarkerArray StairModelPoints;
-
-    //Only has one array:
-    StairModelPoints.markers.resize(1);
-
-    //Configuring the color
-    std_msgs::ColorRGBA _color; _color.r = (0.0); _color.g = (1.0); _color.b = (0.0); _color.a = 1.0;
-
-    //Completing the StairModelPoints MarkerArray
-    for(int i=0; i<Modeled_Stairs.at(1)->Leafs_Of_Stair.cols(); ++i)
-    {
-        float x = Modeled_Stairs.at(1)->Leafs_Of_Stair(0, i);
-        float y = Modeled_Stairs.at(1)->Leafs_Of_Stair(1, i);
-        float z = Modeled_Stairs.at(1)->Leafs_Of_Stair(2, i);
-
-        //create marker:
-        geometry_msgs::Point cubeCenter;
-        cubeCenter.x = x;
-        cubeCenter.y = y;
-        cubeCenter.z = z;
-
-        StairModelPoints.markers[0].points.push_back(cubeCenter);
-
-        //Definindo a cor (Branco somente para visualizacão)
-        StairModelPoints.markers[0].colors.push_back(_color);
-    }
-
-    ros::Time rostime = ros::Time::now();
-
-    for(unsigned int j=0; j < StairModelPoints.markers.size(); ++j)
-    {
-        //Obtendo a quantidade de voxels na octree na profundidade indicada
-        double size = Modeled_Stairs.at(1)->Leafs_Of_Stair.cols();
-
-        StairModelPoints.markers[j].header.frame_id = "/map";
-        StairModelPoints.markers[j].header.stamp = rostime;
-        StairModelPoints.markers[j].ns = "map";
-        StairModelPoints.markers[j].id = j;
-        StairModelPoints.markers[j].type = visualization_msgs::Marker::CUBE_LIST;
-        StairModelPoints.markers[j].scale.x = 0.05;
-        StairModelPoints.markers[j].scale.y = 0.05;
-        StairModelPoints.markers[j].scale.z = 0.05;
-
-        if(StairModelPoints.markers[j].points.size() > 0)
-        {
-            StairModelPoints.markers[j].action = visualization_msgs::Marker::ADD;
-        }
-        else
-        {
-            StairModelPoints.markers[j].action = visualization_msgs::Marker::DELETE;
-        }
-
-    }
-
-
-    msgStairModelPoints.publish(StairModelPoints);
-
 
 
 }
@@ -458,7 +397,7 @@ void diane_octomap::DianeOctomapNodelet::PublishFirstFilteredOccupiedPoints()
     size_t FilteredSize = First_Filtered_Points.cols();
     if (FilteredSize <= 1)
     {
-        ROS_WARN("Nothing to publish, first filtered occupied points array is empty");
+        ROS_WARN("Nothing to publish! First filtered occupied points array is empty!");
         return;
     }
 
@@ -523,6 +462,253 @@ void diane_octomap::DianeOctomapNodelet::PublishFirstFilteredOccupiedPoints()
 }
 
 
+void diane_octomap::DianeOctomapNodelet::PublishHoughLines()
+{
+    if(HoughLinesPoints.size() > 0)
+    {
+        // init markers of occupied voxels:
+        visualization_msgs::Marker HoughLinesMarker;
+
+        HoughLinesMarker.header.frame_id = "/map";
+        HoughLinesMarker.header.stamp = ros::Time::now();
+        HoughLinesMarker.ns = "map";
+        HoughLinesMarker.action = visualization_msgs::Marker::ADD;
+        HoughLinesMarker.pose.orientation.w = 1.0;
+
+        HoughLinesMarker.id = 15;
+
+        HoughLinesMarker.type = visualization_msgs::Marker::LINE_LIST;
+
+
+        // LINE_STRIP/LINE_LIST markers use only the x component of scale, for the line width
+        HoughLinesMarker.scale.x = 0.01;
+
+        HoughLinesMarker.color.g = 1.0;
+        HoughLinesMarker.color.a = 1.0;
+
+
+        for(int i=0; i<HoughLinesPoints.size(); i++)
+        {
+            geometry_msgs::Point line_point_init;
+            line_point_init.x = HoughLinesPoints.at(i)(0,0);
+            line_point_init.y = HoughLinesPoints.at(i)(1,0);
+            line_point_init.z = HoughLinesPoints.at(i)(2,0);
+
+            geometry_msgs::Point line_point_end;
+            line_point_end.x = HoughLinesPoints.at(i)(0,1);
+            line_point_end.y = HoughLinesPoints.at(i)(1,1);
+            line_point_end.z = HoughLinesPoints.at(i)(2,1);
+
+
+            HoughLinesMarker.points.push_back(line_point_init);
+            HoughLinesMarker.points.push_back(line_point_end);
+
+        }
+
+        msgHoughLinesPub.publish(HoughLinesMarker);
+
+
+    }
+    else
+    {
+        ROS_WARN("Nothing to publish! No lines were detected!");
+        return;
+    }
+
+}
+
+
+void diane_octomap::DianeOctomapNodelet::PublishFilteredHoughLines()
+{
+    if(FilteredHoughLinesPoints.size() > 0)
+    {
+        // init markers of occupied voxels:
+        visualization_msgs::Marker FilteredHoughLinesMarker;
+
+        FilteredHoughLinesMarker.header.frame_id = "/map";
+        FilteredHoughLinesMarker.header.stamp = ros::Time::now();
+        FilteredHoughLinesMarker.ns = "map";
+        FilteredHoughLinesMarker.action = visualization_msgs::Marker::ADD;
+        FilteredHoughLinesMarker.pose.orientation.w = 1.0;
+
+        FilteredHoughLinesMarker.id = 20;
+
+        FilteredHoughLinesMarker.type = visualization_msgs::Marker::LINE_LIST;
+
+
+        // LINE_STRIP/LINE_LIST markers use only the x component of scale, for the line width
+        FilteredHoughLinesMarker.scale.x = 0.01;
+
+        FilteredHoughLinesMarker.color.r = 1.0;
+        FilteredHoughLinesMarker.color.a = 1.0;
+
+
+        for(int i=0; i<FilteredHoughLinesPoints.size(); i++)
+        {
+            geometry_msgs::Point line_point_init;
+            line_point_init.x = FilteredHoughLinesPoints.at(i)(0,0);
+            line_point_init.y = FilteredHoughLinesPoints.at(i)(1,0);
+            line_point_init.z = FilteredHoughLinesPoints.at(i)(2,0);
+
+            geometry_msgs::Point line_point_end;
+            line_point_end.x = FilteredHoughLinesPoints.at(i)(0,1);
+            line_point_end.y = FilteredHoughLinesPoints.at(i)(1,1);
+            line_point_end.z = FilteredHoughLinesPoints.at(i)(2,1);
+
+
+            FilteredHoughLinesMarker.points.push_back(line_point_init);
+            FilteredHoughLinesMarker.points.push_back(line_point_end);
+
+        }
+
+        msgFilteredHoughLinesPub.publish(FilteredHoughLinesMarker);
+
+
+    }
+    else
+    {
+        ROS_WARN("Nothing to publish! No lines passed the filter!");
+        return;
+    }
+
+}
+
+
+void diane_octomap::DianeOctomapNodelet::PublishSequencedLinesSegments()
+{
+    if(SequencedLinesSegmentsPoints.size() > 0)
+    {
+        // init markers of occupied voxels:
+        visualization_msgs::Marker SequencedLinesSegmentsMarker;
+
+        SequencedLinesSegmentsMarker.header.frame_id = "/map";
+        SequencedLinesSegmentsMarker.header.stamp = ros::Time::now();
+        SequencedLinesSegmentsMarker.ns = "map";
+        SequencedLinesSegmentsMarker.action = visualization_msgs::Marker::ADD;
+        SequencedLinesSegmentsMarker.pose.orientation.w = 1.0;
+
+        SequencedLinesSegmentsMarker.id = 25;
+
+        SequencedLinesSegmentsMarker.type = visualization_msgs::Marker::LINE_LIST;
+
+
+        // LINE_STRIP/LINE_LIST markers use only the x component of scale, for the line width
+        SequencedLinesSegmentsMarker.scale.x = 0.01;
+
+        SequencedLinesSegmentsMarker.color.r = 0.0;
+        SequencedLinesSegmentsMarker.color.g = 0.0;
+        SequencedLinesSegmentsMarker.color.b = 0.0;
+        SequencedLinesSegmentsMarker.color.a = 1.0;
+
+
+        for(int i=0; i<SequencedLinesSegmentsPoints.size(); i++)
+        {
+            geometry_msgs::Point line_point_init;
+            line_point_init.x = SequencedLinesSegmentsPoints.at(i)(0,0);
+            line_point_init.y = SequencedLinesSegmentsPoints.at(i)(1,0);
+            line_point_init.z = SequencedLinesSegmentsPoints.at(i)(2,0);
+
+            geometry_msgs::Point line_point_end;
+            line_point_end.x = SequencedLinesSegmentsPoints.at(i)(0,1);
+            line_point_end.y = SequencedLinesSegmentsPoints.at(i)(1,1);
+            line_point_end.z = SequencedLinesSegmentsPoints.at(i)(2,1);
+
+
+            SequencedLinesSegmentsMarker.points.push_back(line_point_init);
+            SequencedLinesSegmentsMarker.points.push_back(line_point_end);
+
+        }
+
+        msgSequencedLinesSegmentsPub.publish(SequencedLinesSegmentsMarker);
+
+
+    }
+    else
+    {
+        ROS_WARN("Nothing to publish! No sequenced lines segments were detected!");
+        return;
+    }
+
+}
+
+
+void diane_octomap::DianeOctomapNodelet::PublishStairModelPoints()
+{
+    if(Modeled_Stairs.size() > 0)
+    {
+        size_t ModeledPointsSize = Modeled_Stairs.at(1)->Leafs_Of_Stair.cols();
+        if (ModeledPointsSize <= 1)
+        {
+            ROS_WARN("Nothing to publish, modeled stair has no points stored.");
+            return;
+        }
+
+        // init markers of occupied voxels:
+        visualization_msgs::MarkerArray StairModelPoints;
+
+        //Only has one array:
+        StairModelPoints.markers.resize(1);
+
+        //Configuring the color
+        std_msgs::ColorRGBA _color; _color.r = (0.0); _color.g = (1.0); _color.b = (0.0); _color.a = 1.0;
+
+        //Completing the StairModelPoints MarkerArray
+        for(int i=0; i<Modeled_Stairs.at(1)->Leafs_Of_Stair.cols(); ++i)
+        {
+            float x = Modeled_Stairs.at(1)->Leafs_Of_Stair(0, i);
+            float y = Modeled_Stairs.at(1)->Leafs_Of_Stair(1, i);
+            float z = Modeled_Stairs.at(1)->Leafs_Of_Stair(2, i);
+
+            //create marker:
+            geometry_msgs::Point cubeCenter;
+            cubeCenter.x = x;
+            cubeCenter.y = y;
+            cubeCenter.z = z;
+
+            StairModelPoints.markers[0].points.push_back(cubeCenter);
+
+            //Definindo a cor (Branco somente para visualizacão)
+            StairModelPoints.markers[0].colors.push_back(_color);
+        }
+
+        ros::Time rostime = ros::Time::now();
+
+        for(unsigned int j=0; j < StairModelPoints.markers.size(); ++j)
+        {
+            //Obtendo a quantidade de voxels na octree na profundidade indicada
+            double size = Modeled_Stairs.at(1)->Leafs_Of_Stair.cols();
+
+            StairModelPoints.markers[j].header.frame_id = "/map";
+            StairModelPoints.markers[j].header.stamp = rostime;
+            StairModelPoints.markers[j].ns = "map";
+            StairModelPoints.markers[j].id = j;
+            StairModelPoints.markers[j].type = visualization_msgs::Marker::CUBE_LIST;
+            StairModelPoints.markers[j].scale.x = 0.05;
+            StairModelPoints.markers[j].scale.y = 0.05;
+            StairModelPoints.markers[j].scale.z = 0.05;
+
+            if(StairModelPoints.markers[j].points.size() > 0)
+            {
+                StairModelPoints.markers[j].action = visualization_msgs::Marker::ADD;
+            }
+            else
+            {
+                StairModelPoints.markers[j].action = visualization_msgs::Marker::DELETE;
+            }
+
+        }
+
+        msgStairModelPointsPub.publish(StairModelPoints);
+
+    }
+    else
+    {
+        ROS_WARN("Nothing to publish! No stairs detected on the map.");
+        return;
+    }
+
+}
+
 
 
 
@@ -535,6 +721,15 @@ void diane_octomap::DianeOctomapNodelet::TreatBoolCallBack(const std_msgs::Bool:
     PublishFirstFilteredOccupiedPoints();
 
 
+    PublishHoughLines();
+
+
+    PublishFilteredHoughLines();
+
+
+    PublishSequencedLinesSegments();
+
+
     if(Modeled_Stairs.size() > 0)
     {
         //Publishing the markers of all modeled stairs, for visualization.
@@ -545,6 +740,11 @@ void diane_octomap::DianeOctomapNodelet::TreatBoolCallBack(const std_msgs::Bool:
 
         //Publishing information about all modeled stairs.
         PublishAllStairsModel(Modeled_Stairs);
+
+
+        //Publishing points of the detected stair.
+        PublishStairModelPoints();
+
     }
     else
     {
