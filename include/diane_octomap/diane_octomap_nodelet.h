@@ -62,6 +62,12 @@ class DianeOctomapNodelet : public DianeOctomap, public nodelet::Nodelet
      ros::Publisher msgHoughLinesPub;
 
 
+     ros::Publisher msgFilteredHoughLinesPub;
+
+
+     ros::Publisher msgSequencedLinesSegmentsPub;
+
+
      ros::Publisher msgStairModelPointsPub;
 
 
@@ -96,8 +102,11 @@ class DianeOctomapNodelet : public DianeOctomap, public nodelet::Nodelet
      //Métodos de Publicacão para o Vídeo
      void PublishFirstFilteredOccupiedPoints();
 
-
      void PublishHoughLines();
+
+     void PublishFilteredHoughLines();
+
+     void PublishSequencedLinesSegments();
 
      void PublishStairModelPoints();
 
