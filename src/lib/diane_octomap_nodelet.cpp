@@ -32,9 +32,12 @@ void diane_octomap::DianeOctomapNodelet::onInit()
 
 
     //Publishers de Mensagens para o vídeo
-    msgFirstFilteredOccuppiedPointsPub = nodeHandle.advertise <visualization_msgs::MarkerArray> (getName() + "/first_filtered_occupied_cells", 10, true);
+    msgFirstFilteredOccuppiedPointsPub = nodeHandle.advertise <visualization_msgs::MarkerArray> (getName() + "/First_Filtered_Points", 10, true);
 
-    msgStairModelPoints = nodeHandle.advertise <visualization_msgs::MarkerArray> (getName() + "/Stair_Model_Points", 10, true);
+    msgHoughLinesPub = nodeHandle.advertise <visualization_msgs::Marker> (getName() + "/Hough_Lines", 1000, true);
+
+    msgStairModelPointsPub = nodeHandle.advertise <visualization_msgs::MarkerArray> (getName() + "/Stair_Model_Points", 10, true);
+
 
     //Inicializando os Subscribers de Mensagens
     msgBoolSub = nodeHandle.subscribe <std_msgs::Bool> ("/bool_msg", 10, &DianeOctomapNodelet::TreatBoolCallBack, this);
@@ -259,75 +262,6 @@ void diane_octomap::DianeOctomapNodelet::PublishStairModelsVisual(vector<diane_o
     }
 
 
-
-
-    size_t FilteredSize = First_Filtered_Points.cols();
-    if (FilteredSize <= 1)
-    {
-        ROS_WARN("Nothing to publish, first filtered occupied points array is empty");
-        return;
-    }
-
-    // init markers of occupied voxels:
-    visualization_msgs::MarkerArray StairModelPoints;
-
-    //Only has one array:
-    StairModelPoints.markers.resize(1);
-
-    //Configuring the color
-    std_msgs::ColorRGBA _color; _color.r = (0.0); _color.g = (1.0); _color.b = (0.0); _color.a = 1.0;
-
-    //Completing the StairModelPoints MarkerArray
-    for(int i=0; i<Modeled_Stairs.at(1)->Leafs_Of_Stair.cols(); ++i)
-    {
-        float x = Modeled_Stairs.at(1)->Leafs_Of_Stair(0, i);
-        float y = Modeled_Stairs.at(1)->Leafs_Of_Stair(1, i);
-        float z = Modeled_Stairs.at(1)->Leafs_Of_Stair(2, i);
-
-        //create marker:
-        geometry_msgs::Point cubeCenter;
-        cubeCenter.x = x;
-        cubeCenter.y = y;
-        cubeCenter.z = z;
-
-        StairModelPoints.markers[0].points.push_back(cubeCenter);
-
-        //Definindo a cor (Branco somente para visualizacão)
-        StairModelPoints.markers[0].colors.push_back(_color);
-    }
-
-    ros::Time rostime = ros::Time::now();
-
-    for(unsigned int j=0; j < StairModelPoints.markers.size(); ++j)
-    {
-        //Obtendo a quantidade de voxels na octree na profundidade indicada
-        double size = Modeled_Stairs.at(1)->Leafs_Of_Stair.cols();
-
-        StairModelPoints.markers[j].header.frame_id = "/map";
-        StairModelPoints.markers[j].header.stamp = rostime;
-        StairModelPoints.markers[j].ns = "map";
-        StairModelPoints.markers[j].id = j;
-        StairModelPoints.markers[j].type = visualization_msgs::Marker::CUBE_LIST;
-        StairModelPoints.markers[j].scale.x = 0.05;
-        StairModelPoints.markers[j].scale.y = 0.05;
-        StairModelPoints.markers[j].scale.z = 0.05;
-
-        if(StairModelPoints.markers[j].points.size() > 0)
-        {
-            StairModelPoints.markers[j].action = visualization_msgs::Marker::ADD;
-        }
-        else
-        {
-            StairModelPoints.markers[j].action = visualization_msgs::Marker::DELETE;
-        }
-
-    }
-
-
-    msgStairModelPoints.publish(StairModelPoints);
-
-
-
 }
 
 
@@ -523,6 +457,142 @@ void diane_octomap::DianeOctomapNodelet::PublishFirstFilteredOccupiedPoints()
 }
 
 
+void diane_octomap::DianeOctomapNodelet::PublishHoughLines()
+{
+    if(HoughLinesPoints.size() > 0)
+    {
+        // init markers of occupied voxels:
+        visualization_msgs::Marker HoughLinesMarker;
+
+        //Only has one array:
+//        HoughLinesMarkers.markers.resize(1);
+
+        HoughLinesMarker.header.frame_id = "/map";
+        HoughLinesMarker.header.stamp = ros::Time::now();
+        HoughLinesMarker.ns = "map";
+        HoughLinesMarker.action = visualization_msgs::Marker::ADD;
+        HoughLinesMarker.pose.orientation.w = 1.0;
+
+        HoughLinesMarker.id = 15;
+
+        HoughLinesMarker.type = visualization_msgs::Marker::LINE_LIST;
+
+
+        // LINE_STRIP/LINE_LIST markers use only the x component of scale, for the line width
+        HoughLinesMarker.scale.x = 0.01;
+
+        HoughLinesMarker.color.g = 1.0;
+        HoughLinesMarker.color.a = 1.0;
+
+
+        for(int i=0; i<HoughLinesPoints.size(); i++)
+        {
+            geometry_msgs::Point line_point_init;
+            line_point_init.x = HoughLinesPoints.at(i)(0,0);
+            line_point_init.y = HoughLinesPoints.at(i)(1,0);
+            line_point_init.z = HoughLinesPoints.at(i)(2,0);
+
+            geometry_msgs::Point line_point_end;
+            line_point_end.x = HoughLinesPoints.at(i)(0,1);
+            line_point_end.y = HoughLinesPoints.at(i)(1,1);
+            line_point_end.z = HoughLinesPoints.at(i)(2,1);
+
+
+            HoughLinesMarker.points.push_back(line_point_init);
+            HoughLinesMarker.points.push_back(line_point_end);
+
+        }
+
+        msgHoughLinesPub.publish(HoughLinesMarker);
+
+
+    }
+    else
+    {
+        ROS_WARN("Nothing to publish! No lines were detected!");
+        return;
+    }
+
+}
+
+
+void diane_octomap::DianeOctomapNodelet::PublishStairModelPoints()
+{
+    if(Modeled_Stairs.size() > 0)
+    {
+        size_t ModeledPointsSize = Modeled_Stairs.at(1)->Leafs_Of_Stair.cols();
+        if (ModeledPointsSize <= 1)
+        {
+            ROS_WARN("Nothing to publish, modeled stair has no points stored.");
+            return;
+        }
+
+        // init markers of occupied voxels:
+        visualization_msgs::MarkerArray StairModelPoints;
+
+        //Only has one array:
+        StairModelPoints.markers.resize(1);
+
+        //Configuring the color
+        std_msgs::ColorRGBA _color; _color.r = (0.0); _color.g = (1.0); _color.b = (0.0); _color.a = 1.0;
+
+        //Completing the StairModelPoints MarkerArray
+        for(int i=0; i<Modeled_Stairs.at(1)->Leafs_Of_Stair.cols(); ++i)
+        {
+            float x = Modeled_Stairs.at(1)->Leafs_Of_Stair(0, i);
+            float y = Modeled_Stairs.at(1)->Leafs_Of_Stair(1, i);
+            float z = Modeled_Stairs.at(1)->Leafs_Of_Stair(2, i);
+
+            //create marker:
+            geometry_msgs::Point cubeCenter;
+            cubeCenter.x = x;
+            cubeCenter.y = y;
+            cubeCenter.z = z;
+
+            StairModelPoints.markers[0].points.push_back(cubeCenter);
+
+            //Definindo a cor (Branco somente para visualizacão)
+            StairModelPoints.markers[0].colors.push_back(_color);
+        }
+
+        ros::Time rostime = ros::Time::now();
+
+        for(unsigned int j=0; j < StairModelPoints.markers.size(); ++j)
+        {
+            //Obtendo a quantidade de voxels na octree na profundidade indicada
+            double size = Modeled_Stairs.at(1)->Leafs_Of_Stair.cols();
+
+            StairModelPoints.markers[j].header.frame_id = "/map";
+            StairModelPoints.markers[j].header.stamp = rostime;
+            StairModelPoints.markers[j].ns = "map";
+            StairModelPoints.markers[j].id = j;
+            StairModelPoints.markers[j].type = visualization_msgs::Marker::CUBE_LIST;
+            StairModelPoints.markers[j].scale.x = 0.05;
+            StairModelPoints.markers[j].scale.y = 0.05;
+            StairModelPoints.markers[j].scale.z = 0.05;
+
+            if(StairModelPoints.markers[j].points.size() > 0)
+            {
+                StairModelPoints.markers[j].action = visualization_msgs::Marker::ADD;
+            }
+            else
+            {
+                StairModelPoints.markers[j].action = visualization_msgs::Marker::DELETE;
+            }
+
+        }
+
+        msgStairModelPointsPub.publish(StairModelPoints);
+
+    }
+    else
+    {
+        ROS_WARN("Nothing to publish! No stairs detected on the map.");
+        return;
+    }
+
+}
+
 
 
 
@@ -533,6 +603,8 @@ void diane_octomap::DianeOctomapNodelet::TreatBoolCallBack(const std_msgs::Bool:
 
     //Publishing the first filtered occupied voxels.
     PublishFirstFilteredOccupiedPoints();
+
+    PublishHoughLines();
 
 
     if(Modeled_Stairs.size() > 0)
@@ -545,6 +617,11 @@ void diane_octomap::DianeOctomapNodelet::TreatBoolCallBack(const std_msgs::Bool:
 
         //Publishing information about all modeled stairs.
         PublishAllStairsModel(Modeled_Stairs);
+
+
+        //Publishing points of the detected stair.
+        PublishStairModelPoints();
+
     }
     else
     {

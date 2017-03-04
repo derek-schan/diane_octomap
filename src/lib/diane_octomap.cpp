@@ -110,7 +110,7 @@ void diane_octomap::DianeOctomap::GenerateOcTreeFromFile()
 //    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_3.ot";
 
 //    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_5.ot";
-    string otFileName = "/home/rob/catkin_ws/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_5.ot";
+    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_5.ot";
 //    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_5_2.ot";
 
 //    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Principal_5.ot";
@@ -233,6 +233,49 @@ void diane_octomap::DianeOctomap::StairDetection2D()
 
     //Executando a Transformada de Hough em cada agrupamento de folhas (Matriz) para obtencão das linhas existentes em cada grupo
     vector<vector<diane_octomap::Line*>> Lines = LineHoughTransform(Space_Length, Space_Width, Grouped_Leafs_In_Matrix);
+
+
+    for (int i=0; i<Lines.size(); i++)
+    {
+        for(int j=0; j<Lines.at(i).size(); j++)
+        {
+            Line* line = Lines.at(i).at(j);
+
+            //Calculando a da reta e um ponto da reta
+            float a;
+
+            if(line->Line_Theta > 90 && line->Line_Theta < 270)
+            {
+                a = tan((270 - line->Line_Theta) * (M_PI/180));
+            }
+            else
+            {
+                a = tan((90 + line->Line_Theta) * (M_PI/180));
+            }
+
+            float p_x = line->Line_Rho * cos(line->Line_Theta * M_PI/180);
+            float p_y = line->Line_Rho * sin(line->Line_Theta * M_PI/180);
+
+            //Calculando  valor dos pontos de y (considerando x_min e x_max)
+
+
+            MatrixXf LinePoints = MatrixXf(3, 2);
+
+            LinePoints(0,0) = x_min;
+            LinePoints(1,0) = p_y + a*(x_min - p_x);
+            LinePoints(2,0) = line->Line_Z;
+
+            LinePoints(0,1) = x_max;
+            LinePoints(1,1) = p_y + a*(x_max - p_x);
+            LinePoints(2,1) = line->Line_Z;
+
+
+            HoughLinesPoints.push_back(LinePoints);
+
+        }
+
+    }
+
 
 
     ///Agrupando os Line's encontrados (de todos os grupos) por Rho e Theta
@@ -473,6 +516,11 @@ vector<double> diane_octomap::DianeOctomap::GetSpaceParameters(MatrixXf Leafs)
 
     double length = max_x - min_x;
     double width = max_y - min_y;
+
+    x_min = min_x;
+    x_max = max_x;
+    y_min = min_y;
+    y_max = max_y;
 
     result.push_back(length);
     result.push_back(width);
@@ -940,7 +988,7 @@ vector<vector<diane_octomap::Line*>> diane_octomap::DianeOctomap::GroupLinesByTh
 
 
                 //Se as distâncias entre os mínimos dos intervalos e entre os máximos dos intervalos estiverem dentro da tolerância, adiciona a nova linha nesse grupo
-                double X_Tolerance = 0.40; //0.11
+                double X_Tolerance = 0.11; //0.11
 
                 if((fabs(temp_min_X - Groups_Lines.at(j).at(0)->min_X) <= X_Tolerance) && (fabs(temp_max_X - Groups_Lines.at(j).at(0)->max_X) <= X_Tolerance))
                 {
