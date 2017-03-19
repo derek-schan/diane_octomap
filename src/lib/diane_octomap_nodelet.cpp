@@ -92,10 +92,8 @@ void diane_octomap::DianeOctomapNodelet::PublishOccupiedMarker()
     // each array stores all cubes of a different size, one for each depth level:
     occupiedNodesVis.markers.resize(octree->getTreeDepth() + 1);
 
-
-
     // now, traverse all leafs in the tree e completando o OccupiedMarker:
-    std_msgs::ColorRGBA _color; _color.r = (1.0); _color.g = (1.0); _color.b = (1.0); _color.a = 1.0;
+    std_msgs::ColorRGBA _color; _color.r = (0.62); _color.g = (0.66); _color.b = (0.85); _color.a = 1.0;
 
     for(OcTree::leaf_iterator it = octree->begin(), end = octree->end(); it!= end; ++it)
     {
@@ -189,8 +187,10 @@ void diane_octomap::DianeOctomapNodelet::PublishStairModelsVisual(vector<diane_o
 
 
 
-        // Line list is red
+        // Line list is red (or is it?)
         line_list.color.r = 1.0;
+        line_list.color.g = 0.42;
+        line_list.color.b = 0.0;
         line_list.color.a = 1.0;
 //        for(int j = 0; j < Modeled_Stairs.size() ; ++j)
         for(int j = 1; j < 2 ; ++j)
@@ -408,7 +408,7 @@ void diane_octomap::DianeOctomapNodelet::PublishFirstFilteredOccupiedPoints()
     FirstFilterOccupiedNodesVis.markers.resize(1);
 
     //Configuring the color
-    std_msgs::ColorRGBA _color; _color.r = (0.0); _color.g = (0.0); _color.b = (1.0); _color.a = 1.0;
+    std_msgs::ColorRGBA _color; _color.r = (0.22); _color.g = (0.29); _color.b = (0.67); _color.a = 1.0;
 
     //Completing the FirstFilterOccupiedNodesVis MarkerArray
     for(int i=0; i<First_Filtered_Points.cols(); ++i)
@@ -483,7 +483,9 @@ void diane_octomap::DianeOctomapNodelet::PublishHoughLines()
         // LINE_STRIP/LINE_LIST markers use only the x component of scale, for the line width
         HoughLinesMarker.scale.x = 0.01;
 
-        HoughLinesMarker.color.g = 1.0;
+        HoughLinesMarker.color.r = 0.90;
+        HoughLinesMarker.color.g = 0.45;
+        HoughLinesMarker.color.b = 0.45;
         HoughLinesMarker.color.a = 1.0;
 
 
@@ -539,7 +541,9 @@ void diane_octomap::DianeOctomapNodelet::PublishFilteredHoughLines()
         // LINE_STRIP/LINE_LIST markers use only the x component of scale, for the line width
         FilteredHoughLinesMarker.scale.x = 0.01;
 
-        FilteredHoughLinesMarker.color.r = 1.0;
+        FilteredHoughLinesMarker.color.r = 0.90;
+        FilteredHoughLinesMarker.color.g = 0.22;
+        FilteredHoughLinesMarker.color.b = 0.21;
         FilteredHoughLinesMarker.color.a = 1.0;
 
 
@@ -595,9 +599,9 @@ void diane_octomap::DianeOctomapNodelet::PublishSequencedLinesSegments()
         // LINE_STRIP/LINE_LIST markers use only the x component of scale, for the line width
         SequencedLinesSegmentsMarker.scale.x = 0.01;
 
-        SequencedLinesSegmentsMarker.color.r = 0.0;
-        SequencedLinesSegmentsMarker.color.g = 0.0;
-        SequencedLinesSegmentsMarker.color.b = 0.0;
+        SequencedLinesSegmentsMarker.color.r = 0.72;
+        SequencedLinesSegmentsMarker.color.g = 0.11;
+        SequencedLinesSegmentsMarker.color.b = 0.11;
         SequencedLinesSegmentsMarker.color.a = 1.0;
 
 
@@ -650,7 +654,7 @@ void diane_octomap::DianeOctomapNodelet::PublishStairModelPoints()
         StairModelPoints.markers.resize(1);
 
         //Configuring the color
-        std_msgs::ColorRGBA _color; _color.r = (0.0); _color.g = (1.0); _color.b = (0.0); _color.a = 1.0;
+        std_msgs::ColorRGBA _color; _color.r = (0.0); _color.g = (0.78); _color.b = (0.36); _color.a = 1.0;
 
         //Completing the StairModelPoints MarkerArray
         for(int i=0; i<Modeled_Stairs.at(1)->Leafs_Of_Stair.cols(); ++i)

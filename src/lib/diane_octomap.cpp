@@ -113,7 +113,7 @@ void diane_octomap::DianeOctomap::GenerateOcTreeFromFile()
 //    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_5.ot";
 //    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_5_2.ot";
 
-    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_video_objetos_5_final.ot";
+    string otFileName = "/home/rob/catkin_ws/src/diane_octomap/files/MapFiles/Escada_Laser.ot";
 
 //    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Principal_5.ot";
 //    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_LEAD_5.ot";
@@ -243,6 +243,11 @@ void diane_octomap::DianeOctomap::StairDetection2D()
         for(int j=0; j<Lines.at(i).size(); j++)
         {
             Line* line = Lines.at(i).at(j);
+
+            if (line->Line_Z <= 0.25)
+            {
+                continue;
+            }
 
             //Calculando o "a" da reta e um ponto da reta
             float a;
