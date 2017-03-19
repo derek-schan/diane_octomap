@@ -16,10 +16,84 @@ diane_octomap::DianeOctomapNodelet::DianeOctomapNodelet()
 
 void diane_octomap::DianeOctomapNodelet::onInit()
 {
+    ///*********************************************
+    ///Obtaining the parameters detection parameters
+    ///*********************************************
+
+    ros::NodeHandle & privateNH = getPrivateNodeHandle();
+
+
+    ///Octomap's Parameters
+    privateNH.param<string>("otFileName", otFileName, "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_video_objetos_5_final.ot");
+
+
+    ///BoundingBox's Parameters
+    privateNH.param<float>("BoundingBoxMinPointX", BoundingBoxMinPoint.x(), -5);
+    privateNH.param<float>("BoundingBoxMinPointY", BoundingBoxMinPoint.y(), -5);
+    privateNH.param<float>("BoundingBoxMinPointZ", BoundingBoxMinPoint.z(), 0.20);
+
+    privateNH.param<float>("BoundingBoxMaxPointX", BoundingBoxMaxPoint.x(), 5);
+    privateNH.param<float>("BoundingBoxMaxPointY", BoundingBoxMaxPoint.y(), 100);
+    privateNH.param<float>("BoundingBoxMaxPointZ", BoundingBoxMaxPoint.z(), 100);
+
+
+    ///Column Filter's Parameters
+    privateNH.param<int>("ColumnMinSize", ColumnMinSize, 0);
+    privateNH.param<int>("ColumnMaxSize", ColumnMaxSize, 6);
+
+
+    ///Hough Transform's Parameters
+    privateNH.param<double>("Rho_Passo", Rho_Passo, 0.05);
+    privateNH.param<double>("Theta_Passo", Theta_Passo, 5);
+
+    privateNH.param<double>("AccumulateDistTolerance", AccumulateDistTolerance, Rho_Passo/2);
+    privateNH.param<int>("MinAmountVotes", MinAmountVotes, 10);
+
+
+    ///Grouped Line's by (Rho, Theta) Parameters
+    privateNH.param<int>("MinNumberLines", MinNumberLines, 3);
+    privateNH.param<int>("MaxNumberLines", MaxNumberLines, 6);
+
+
+    ///Segmentation's Parameters
+    privateNH.param<double>("SegmentationXTol", SegmentationXTol, 0.11);
+
+
+    ///Grouped Line's by (Theta, X-Interval) Parameters
+    privateNH.param<double>("IntervalXTol", IntervalXTol, 0.15);
+
+
+    ///Filtering Grouped Line's by quantity of Line Parameters
+    privateNH.param<int>("MinNumSteps", MinNumSteps, 3);
+
+
+    ///Merge Group's Lines by (Rho) Parameters
+    privateNH.param<double>("MergeDeltaRhoTol", MergeDeltaRhoTol, 0.11);
+
+
+    ///Sequence Filter's Parameters
+    privateNH.param<double>("SequenceZMax", SequenceZMax, 0.30);
+    privateNH.param<double>("SequenceMinStepWidth", SequenceMinStepWidth, 0.23);
+    privateNH.param<double>("SequenceMaxStepWidth", SequenceMaxStepWidth, 0.38);
+
+
+    ///Stair Modelling's Parameters
+    privateNH.param<double>("ModellingMinStepHeight", ModellingMinStepHeight, 0.14);
+    privateNH.param<double>("ModellingMaxStepHeight", ModellingMaxStepHeight, 0.23);
+    privateNH.param<double>("ModellingMinStepWidth", ModellingMinStepWidth, 0.24);
+    privateNH.param<double>("ModellingMaxStepWidth", ModellingMaxStepWidth, 0.36);
+
+
+
+
+    ///*********************************************************************************
+    ///Creating the Publishers/Subscribers/Services/Clients of the Diane Octomap Nodelet
+    ///*********************************************************************************
+
     nodeHandle = getNodeHandle();
 
 
-    //Inicializando os Publishers de Mensagens
+    ///Initializing the Publishers
     msgOctomapFullMapPub = nodeHandle.advertise <Octomap> (getName() + "/octomap_full", 10, true);
     msgOctomapOccupiedMarkerPub = nodeHandle.advertise <visualization_msgs::MarkerArray> (getName() + "/occupied_cells_vis_array", 10, true);
     msgOctomapFreeMarkerPub = nodeHandle.advertise <visualization_msgs::MarkerArray> (getName() + "/free_cells_vis_array", 10, true);
@@ -31,7 +105,7 @@ void diane_octomap::DianeOctomapNodelet::onInit()
     msgModeledStairAllPub = nodeHandle.advertise <diane_octomap::StairArrayInfo>(getName() + "/Modeled_Stairs_Info_All", 10);
 
 
-    //Publishers de Mensagens para o vídeo
+    ///Initializing the Publishers needed for Visualization
     msgFirstFilteredOccuppiedPointsPub = nodeHandle.advertise <visualization_msgs::MarkerArray> (getName() + "/First_Filtered_Points", 10, true);
 
     msgHoughLinesPub = nodeHandle.advertise <visualization_msgs::Marker> (getName() + "/Hough_Lines", 1000, true);
@@ -43,22 +117,22 @@ void diane_octomap::DianeOctomapNodelet::onInit()
     msgStairModelPointsPub = nodeHandle.advertise <visualization_msgs::MarkerArray> (getName() + "/Stair_Model_Points", 10, true);
 
 
-    //Inicializando os Subscribers de Mensagens
+    ///Initializing the Subscribers
     msgBoolSub = nodeHandle.subscribe <std_msgs::Bool> ("/bool_msg", 10, &DianeOctomapNodelet::TreatBoolCallBack, this);
     msgOctomapFullMapSub = nodeHandle.subscribe <Octomap> ("/octomap_full", 10, &DianeOctomapNodelet::TreatOctomapFullMapCallback, this);
 
 
-    //Inicializando os Servers de Servicos
+    ///Initializing the Services
     srvDetectStairsSer = nodeHandle.advertiseService(getName() + "/Detect_Stairs", &DianeOctomapNodelet::DetectStairsCallback, this);
 
 
-    //Iniciando o Ciclo do Thread
+    ///Inicializing the Thread's Cycle
     StartInternalCycle();
 
 }
 
 
-//Publicando a octree que está armazenada internamente (Caso outro pacote queira utilizar)
+//Publishing the octree that is stored in the nodelet (If any other package wants to use it)
 void diane_octomap::DianeOctomapNodelet::PublishOctomapFullMap()
 {
     Octomap map;
@@ -77,7 +151,7 @@ void diane_octomap::DianeOctomapNodelet::PublishOctomapFullMap()
 }
 
 
-//Publicando um MarkerArray com os voxels ocupados
+//Publishing a MarkerArray containing the occupied voxels
 void diane_octomap::DianeOctomapNodelet::PublishOccupiedMarker()
 {
     size_t octomapSize = octree->size();
@@ -99,10 +173,7 @@ void diane_octomap::DianeOctomapNodelet::PublishOccupiedMarker()
 
     for(OcTree::leaf_iterator it = octree->begin(), end = octree->end(); it!= end; ++it)
     {
-        //Verificar se o voxel faz parte do Bounding Box "BBX"
-
-
-        //Se o nó estiver ocupado:
+        //If the node is occupied:
         if (octree->isNodeOccupied(*it))
         {
             double size = it.getSize();
@@ -121,7 +192,7 @@ void diane_octomap::DianeOctomapNodelet::PublishOccupiedMarker()
 
             occupiedNodesVis.markers[idx].points.push_back(cubeCenter);
 
-            //Definindo a cor (Branco somente para visualizacão)
+            //Defining the color (White for visulization)
             occupiedNodesVis.markers[idx].colors.push_back(_color);
 
         }

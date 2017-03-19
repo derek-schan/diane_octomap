@@ -227,22 +227,90 @@ protected:
     /// Mutex used to control the internal cycle thread.
     boost::mutex mutStartStop;
 
-    //OcTree referente ao mapa estático, criada à partir do arquivo .ot inicial.
+
+    ///Octomap's Variables (OcTree Structures; Properties; and Structures containing Leafs of Bounding Box; and path to OcTree file)
     OcTree* octree;
     OcTree* octreeFromMsg;
 
     double Octree_Resolution;
 
     vector<OcTree::leaf_bbx_iterator> OccupiedLeafsInBBX;
-
     MatrixXf OccupiedPoints;
 
 
+    string otFileName;
 
-    ///Variáveis utilizadas para publicar o passo a passo
+
+    ///BoundingBox's Variables
+    point3d BoundingBoxMinPoint;
+    point3d BoundingBoxMaxPoint;
+
+
+    ///Column Filter's Variables (Group by X,Y and filter)
+    int ColumnMinSize;
+    int ColumnMaxSize;
+
+
+    ///Hough Transform's Variables
+    double SpaceLength;
+    double SpaceWidth;
+
+    double Rho_Min;
+    double Rho_Max;
+    double Theta_Min;   //In degrees
+    double Theta_Max;   //In degrees
+
+    double Rho_Passo;   //Incremento em Rho
+    double Theta_Passo; //Incremento em Theta
+
+    int Rho_Num;    //Number of intervals in the Rho axis of the Hough's Space
+    int Theta_Num;  //Number of intervals in the Theta axis of the Hough's Space
+
+    double AccumulateDistTolerance; //Distance tolerance to be considered a valid Line.
+
+    int MinAmountVotes; //Minimum amount of votes needed by the cell to be considered a valid Line.
+
+
+    ///Grouped Line's by (Rho, Theta) Variables
+    int MinNumberLines;
+    int MaxNumberLines;
+
+
+    ///Segmentation's Variables
+    double SegmentationXTol;
+
+
+    ///Grouped Line's by (Theta, X-Interval) Variables
+    double IntervalXTol;
+
+
+    ///Filtering Grouped Line's by quantity of Line Variables
+    int MinNumSteps;
+
+
+    ///Merge Group's Lines by Rho Variables
+    double MergeDeltaRhoTol;
+
+
+    ///Sequence Filter's Variables
+    double SequenceZMax;
+    double SequenceMinStepWidth;
+    double SequenceMaxStepWidth;
+
+
+    ///Stair Modelling's Variables
+    double ModellingMinStepHeight;
+    double ModellingMaxStepHeight;
+    double ModellingMinStepWidth;
+    double ModellingMaxStepWidth;
+
+
+
+
+    ///Variables needed to publish step-by-step
     MatrixXf First_Filtered_Points;
 
-    float x_min, x_max, y_min, y_max;
+    float SpaceXMin, SpaceXMax, SpaceYMin, SpaceYMax;
 
     vector<MatrixXf> HoughLinesPoints;
 
@@ -253,19 +321,11 @@ protected:
 
 
     ///Variáveis referentes à Transformada de Hough (2D e 3D)
-    double Rho_Min;
-    double Rho_Max;
-    double Theta_Min;   //Em graus
-    double Theta_Max;   //Em graus
 //    double Phi_Min;     //Em graus (Somente utilizado no 3D)
 //    double Phi_Max;     //Em graus (Somente utilizado no 3D)
 
-    double Rho_Passo;   //Incremento em Rho
-    double Theta_Passo; //Incremento em Theta
 //    double Phi_Passo;   //Incremento em Phi (Somente utilizado no 3D)
 
-    int Rho_Num;    //Número de intervalos no eixo de rho no espaco da transformada
-    int Theta_Num;  //Número de intervalos no eixo de theta no espaco da transformada
 //    int Phi_Num;  //Número de intervalos no eixo de phi no espaco da transformada (Somente utilizado no 3D)
 
 
@@ -282,8 +342,8 @@ protected:
 //    double Filter_Vote_Max;
 
 
-    ///Definindo as tolerâncias para o merge dos planos
-    double delta_merge_Rho;
+//    ///Definindo as tolerâncias para o merge dos planos
+//    double delta_merge_Rho;
 
 
 //    ///Definindo as tolerâncias para o merge dos Planos detectados (Somente utilizado no 3D)
@@ -294,13 +354,6 @@ protected:
 //    ///Definindo variáveis resultantes do histograma de planos
 //    double Histogram_Dist_Min;
 //    double Histogram_Dist_Max;
-
-    ///Definindo características padrões de uma escada
-    int Min_Num_Steps;
-    double Min_Step_Width;
-    double Max_Step_Width;
-    double Min_Step_Height;
-    double Max_Step_Height;
 
 
     ///Variável que armazenará todas as escadas que foram modeladas
@@ -340,22 +393,21 @@ public:
     //A identificacão da escada será sobre o vetor de folhas contidas dentro do Bounding Box usando uma lógica em 2D
     void StairDetection2D();
 
-    vector<MatrixXf> GroupPlanesByXY(MatrixXf Leafs);
 
+    //Agrupando as folhas que possuem as mesmas coordenadas (X,Y)
+    vector<MatrixXf> GroupLeafsByXY(MatrixXf Leafs);
 
-
-    vector<MatrixXf> GroupPlanesByZ(vector<MatrixXf> Leafs);
 
     //Agrupando as folhas que possuem o mesmo Z (estão no mesmo nível) em grupos
-    vector<MatrixXf> GroupPlanesByZ(MatrixXf Leafs);
+    vector<MatrixXf> GroupLeafsByZ(vector<MatrixXf> LeafColumns);
 
 
-    //Obtendo a largura e comprimento do espaco definido pelas folhas
-    vector<double> GetSpaceParameters(MatrixXf Leafs);
+    //Obtendo parâmtetros do espaco definido pelas folhas
+    void GetSpaceParameters(MatrixXf Leafs);
 
 
-    //Aplicando a Transformada de Hough para todos os níveis de Z, obtendo todas um grupo de grupo de retas (cada grupo de retas é referente à um nível de Z)
-    vector<vector<Line*>> LineHoughTransform(double Space_Length, double Space_Width,vector<MatrixXf> Leafs);
+    //Aplicando a Transformada de Hough para todos os níveis de Z, obtendo todas as linhas de um grupo de retas (cada grupo de retas é referente à um nível de Z)
+    vector<vector<Line*>> LineHoughTransform(vector<MatrixXf> Leafs);
 
 
     //Funcão que, para um determinado grupo de folhas, cria o acumulador, acumula os votos e extrai as retas desse grupo
@@ -371,7 +423,7 @@ public:
 
 
     //Filtrando as retas que aparecem em muitos níveis de Z - provavelmente são paredes - ou que aparecem muitos poucos níveis de Z - provavelmente são ruídos)
-    vector<vector<Line*>> FilterGroups(vector<vector<diane_octomap::Line*>> GroupLineByTheta, int Min_Size, int Max_Size);
+    vector<vector<Line*>> FilterGroups(vector<vector<diane_octomap::Line*>> GroupLineByTheta);
 
 
     //Gerando um único objeto Line para cada grupo de Line's que possuem o mesmo Rho e Theta (armazenando o min_Z e o max_Z em que essa cada Line ocorre)
@@ -391,6 +443,10 @@ public:
 
     //Agrupando os segmentos de linhas que possuírem o mesmo Theta e que possuírem o intervalo aceitável
     vector<vector<Line*>> GroupLinesByThetaAndInterval(vector<diane_octomap::Line*> Segmented_Lines);
+
+
+    //Filtrando os grupos que não possuem um número suficiente de Line's para formar uma escada.
+    vector<vector<Line*>> FilterGroupedLines(vector<vector<Line*>> GroupThetaIntervalLines);
 
 
     //Realizando um Merge para todos os grupos de linhas com o mesmo Theta e que possuem o Rho's muito próximos
@@ -429,8 +485,23 @@ public:
     vector<Stair*> ModelStairsWithMatrix(vector<Stair*>& Stair_Candidates);
 
 
-    //Escrevendo um candidato à escada para plot
-    void WriteStairCandidateToFileWithMatrix(diane_octomap::Stair* Stair);
+
+
+
+//    //Escrevendo um candidato à escada para plot
+//    void WriteStairCandidateToFileWithMatrix(diane_octomap::Stair* Stair);
+
+
+
+    ///Storing Methods for Publishing
+    void ExtractColumnFilteredPoints(vector<MatrixXf> LeafColumns);
+
+    void ExtractHoughLinesPoints(vector<vector<Line*>> Lines);
+
+    void ExtractFilteredHoughLinesPoints(vector<vector<Line*>> Filtered_Groups);
+
+    void ExtractSequencedLinesSegmentsPoints(vector<vector<Line*>> Filtered_Sequence);
+
 
     ///*** Fim da Lógica utilizando retas***
 

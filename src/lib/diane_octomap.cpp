@@ -14,9 +14,92 @@ diane_octomap::DianeOctomap::DianeOctomap()
 {
     stop = false;
 
-    ///Variáveis de configuracao para a Transformada de Hough em 2D (Deteccao das Linhas)
-    Rho_Passo = 0.05;   //0.05
-    Theta_Passo = 5;    //5
+    ///Octomap's Variables (OcTree Structures; Properties; and Structures containing Leafs of Bounding Box; and path to OcTree file)
+    OccupiedPoints = MatrixXf();
+
+
+//    otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_1.ot";
+//    otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_1.ot";
+
+//    otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_3.ot";
+//    otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_3.ot";
+
+//    otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_5.ot";
+//    otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_5.ot";
+//    otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_5_2.ot";
+
+//    otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_video_objetos_5_final.ot";
+
+//    otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Principal_5.ot";
+//    otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_LEAD_5.ot";
+
+
+//    otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_7.ot";
+//    otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_7.ot";
+
+
+
+    ///BoundingBox's Variables
+//    BoundingBoxMinPoint.x() = -5;   //-5
+//    BoundingBoxMinPoint.y() = -5;   //-5
+//    BoundingBoxMinPoint.z() = 0.20;  //0.05
+
+//    BoundingBoxMaxPoint.x() = 5;    //5
+//    BoundingBoxMaxPoint.y() = 100;  //100
+//    BoundingBoxMaxPoint.z() = 100;  //100
+
+    ///Column Filter's Variables (Group by X,Y and filter)
+//    ColumnMinSize = 0;  //0
+//    ColumnMaxSize = 6;  //6
+
+
+    ///Hough Transform's Variables
+//    Rho_Passo = 0.05;   //0.05
+//    Theta_Passo = 5;    //5
+
+//    AccumulateDistTolerance = Rho_Passo/2;  //0.025
+//    MinAmountVotes = 10;    //10
+
+
+    ///Grouped Line's by (Rho, Theta) Variables
+//    MinNumberLines = 3; //3
+//    MaxNumberLines = 6; //6
+
+
+    ///Segmentation's Variables
+//    SegmentationXTol = 0.11; //0.11
+
+
+    ///Grouped Line's by (Theta, X-Interval) Variables
+//    IntervalXTol = 0.15;    //0.11
+
+
+    ///Filtering Grouped Line's by quantity of Line Variables
+//    MinNumSteps = 3;    //3
+
+
+    ///Merge Group's Lines by (Rho) Variables
+//    MergeDeltaRhoTol = 0.11;    //0.11
+
+
+    ///Sequence Filter's Variables
+//    SequenceZMax = 0.30;    //0.10
+//    SequenceMinStepWidth = 0.23;    //0.25
+//    SequenceMaxStepWidth = 0.38;    //0.35
+
+
+    ///Stair Modelling's Variables
+//    ModellingMinStepHeight = 0.14;  //0.14
+//    ModellingMaxStepHeight = 0.23;  //0.23
+//    ModellingMinStepWidth = 0.24;   //0.24
+//    ModellingMaxStepWidth = 0.36;   //0.36
+
+
+
+
+
+    ///Variables used for publishing in messages/services
+    First_Filtered_Points = MatrixXf();
 
 
 //    ///Variáveis para filtrar os planos a serem extraídos na Transformada de Hough em 3D (Deteccão de planos)
@@ -26,8 +109,8 @@ diane_octomap::DianeOctomap::DianeOctomap()
 //    Filter_Vote_Max = 400;
 
 
-    ///Definindo as tolerâncias para o merge dos objetos Line's (Se a distância estiver dentro da tolerância, aplica o merge)
-    delta_merge_Rho = 0.11; //0.11
+//    ///Definindo as tolerâncias para o merge dos objetos Line's (Se a distância estiver dentro da tolerância, aplica o merge)
+//    delta_merge_Rho = 0.11; //0.11
 
 //    ///Definindo as tolerâncias para o merge dos Planos detectados (Somente utilizado no 3D)
 //    delta_Rho = 0.1;
@@ -35,18 +118,9 @@ diane_octomap::DianeOctomap::DianeOctomap()
 //    delta_Phi = 0;
 
 
-    ///Definindo características padrões de uma escada
-    Min_Num_Steps = 3;      //3
-    Min_Step_Width = 0.23;  //0.25
-    Max_Step_Width = 0.38;  //0.35
-    Min_Step_Height = 0.09; //0.09
-    Max_Step_Height = 0.20; //0.20
-
-    OccupiedPoints = MatrixXf();
 
 
 
-    First_Filtered_Points = MatrixXf();
 
 }
 
@@ -103,25 +177,6 @@ void diane_octomap::DianeOctomap::InternalCycleProcedure()
 //Gerando a octree à partir de um file (Pode-se substituir para ler uma octree do octomap_server - Será necessário para uma deteccão online)
 void diane_octomap::DianeOctomap::GenerateOcTreeFromFile()
 {
-//    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_1.ot";
-//    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_1.ot";
-
-//    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_3.ot";
-//    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_3.ot";
-
-//    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_5.ot";
-//    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_5.ot";
-//    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_5_2.ot";
-
-    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_video_objetos_5_final.ot";
-
-//    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Principal_5.ot";
-//    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_LEAD_5.ot";
-
-
-//    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_7.ot";
-//    string otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_7.ot";
-
     AbstractOcTree* abs_tree = AbstractOcTree::read(otFileName);
     if(abs_tree) // read error returns NULL
     {
@@ -171,33 +226,24 @@ void diane_octomap::DianeOctomap::GenerateOcTreeFromFile()
 }
 
 
-//Método para armazenar as folhas ocupadas em OccupiedPoints (Não precisamos do Bounding Box)
+///Method that stores in the OccupiedPoints structure the coordinates of the occupied leafs
 void diane_octomap::DianeOctomap::GetOccupiedLeafsOfBBX(OcTree* octree)
 {
-    point3d min;
-    min.x() = -5;   //-5
-    min.y() = -5;   //-5
-    min.z() = 0.20;  //0.05
-
-    point3d max;
-    max.x() = 5;    //5
-    max.y() = 100;  //100
-    max.z() = 100;  //100
-
+    //Variable that stores the number of points that are inside the Bounding Box
+    int Occupied_Points_Count = 0;
 
     OccupiedPoints.conservativeResize(3, octree->getNumLeafNodes());
 
-    int Occupied_Points_Count = 0;
 
-
-    //Armazenando somente as folhas pertencentes à Bounding Box e que estejam ocupadas.
-    for(OcTree::leaf_bbx_iterator bbx_it = octree->begin_leafs_bbx(min, max), end=octree->end_leafs_bbx(); bbx_it!= end; ++bbx_it)
+    //Storing the coordinates of the occupied leafs contained inside the Bounding Box.
+    for(OcTree::leaf_bbx_iterator bbx_it = octree->begin_leafs_bbx(BoundingBoxMinPoint, BoundingBoxMaxPoint), end=octree->end_leafs_bbx(); bbx_it!= end; ++bbx_it)
     {
         if(octree->isNodeOccupied(*bbx_it))
         {
+            //Storing the leaf in the vector (Probably unused)
             OccupiedLeafsInBBX.push_back(bbx_it);
 
-            //Populando a Matriz que armazenará os pontos
+            //Storing the leaf's coordinates in the Matrix
             OccupiedPoints(0, Occupied_Points_Count) = (double)bbx_it.getX();
             OccupiedPoints(1, Occupied_Points_Count) = (double)bbx_it.getY();
             OccupiedPoints(2, Occupied_Points_Count) = (double)bbx_it.getZ();
@@ -209,256 +255,94 @@ void diane_octomap::DianeOctomap::GetOccupiedLeafsOfBBX(OcTree* octree)
 
     OccupiedPoints.conservativeResize(3, Occupied_Points_Count);
 
-    cout << "Folhas ocupadas: " << OccupiedLeafsInBBX.size() << endl << endl;
+    cout << "Folhas ocupadas: " << Occupied_Points_Count << endl << endl;
 
 }
 
 
 
-///-------------------------------------------------- Deteccao de Escada pelo metodo 2D ---------------------------------------------------------
+///-------------------------------------------------- Stair Detection Method using 2D logic ---------------------------------------------------------
 
 void diane_octomap::DianeOctomap::StairDetection2D()
 {
-    double time_i = clock();
-    vector<MatrixXf> GroupedXY = GroupPlanesByXY(OccupiedPoints);
-
-    vector<MatrixXf> Grouped_Leafs_In_Matrix = GroupPlanesByZ(GroupedXY);
-    ///Armazenando e agrupando as folhas que possuem o mesmo Z
-//    vector<MatrixXf> Grouped_Leafs_In_Matrix = GroupPlanesByZ(OccupiedPoints);
+    ///Grouping the points by (X,Y) coordinates
+    vector<MatrixXf> GroupedXY = GroupLeafsByXY(OccupiedPoints);
 
 
-    ///Hough - encontrando as retas em cada altura em Z
-    //Obtendo o tamanho do espaco em 2D (para criacao do espaco de Hough
-    vector<double> Space_Parameters = diane_octomap::DianeOctomap::GetSpaceParameters(OccupiedPoints);
-    float Space_Length = Space_Parameters.at(0);
-    float Space_Width = Space_Parameters.at(1);
-
-    //Executando a Transformada de Hough em cada agrupamento de folhas (Matriz) para obtencão das linhas existentes em cada grupo
-    vector<vector<diane_octomap::Line*>> Lines = LineHoughTransform(Space_Length, Space_Width, Grouped_Leafs_In_Matrix);
+    ///Group the points that passed the column filter by Z coordinate
+    vector<MatrixXf> Grouped_Leafs_In_Matrix = GroupLeafsByZ(GroupedXY);
 
 
-    //Obtendo os pontos para plot das linhas do Hough para o vídeo
-    for (int i=0; i<Lines.size(); i++)
-    {
-        for(int j=0; j<Lines.at(i).size(); j++)
-        {
-            Line* line = Lines.at(i).at(j);
-
-            //Calculando o "a" da reta e um ponto da reta
-            float a;
-
-            if(line->Line_Theta > 90 && line->Line_Theta < 270)
-            {
-                a = tan((270 - line->Line_Theta) * (M_PI/180));
-            }
-            else
-            {
-                a = tan((90 + line->Line_Theta) * (M_PI/180));
-            }
-
-            float p_x = line->Line_Rho * cos(line->Line_Theta * M_PI/180);
-            float p_y = line->Line_Rho * sin(line->Line_Theta * M_PI/180);
+    ///Method that extract and stores the points that passed the column filter
+    ExtractColumnFilteredPoints(GroupedXY);
 
 
-            //Calculando os pontos iniciais e finais
-
-            MatrixXf LinePoints = MatrixXf(3, 2);
-
-            LinePoints(0,0) = x_min;
-            LinePoints(1,0) = p_y + a*(x_min - p_x);
-            LinePoints(2,0) = line->Line_Z;
-
-            LinePoints(0,1) = x_max;
-            LinePoints(1,1) = p_y + a*(x_max - p_x);
-            LinePoints(2,1) = line->Line_Z;
-
-            HoughLinesPoints.push_back(LinePoints);
-
-        }
-
-    }
+    ///Hough - Selecting the straight lines in each Z-Plane
+    //Obtaining the space parameter
+    GetSpaceParameters(OccupiedPoints);
 
 
+    //Executing the Hough's Transform in each Group of Leafs (grouped by Z)
+    vector<vector<diane_octomap::Line*>> Lines = LineHoughTransform(Grouped_Leafs_In_Matrix);
 
-    ///Agrupando os Line's encontrados (de todos os grupos) por Rho e Theta
-    ///Para identificar quantas vezes cada linha ocorre
+
+    ///Method that obtains and stores the points of the Line's received from Hough's Transform
+    ExtractHoughLinesPoints(Lines);
+
+
+    ///Grouping the Line's objects that have the same Rho and Theta Parameters
     vector<vector<diane_octomap::Line*>> GroupLinesByRhoTheta = GroupLineByRhoTheta(Lines);
 
 
-    int min_num_line = 2;   //3
-    int max_num_line = 6;   //6
-    ///Filtrando os grupos de Line's pela quantidade de vezes em que ocorreram.
-    //(Se aparecer muitas vezes, deve ser uma parede. Se apareceu pouco, deve ser um ruído --- Os limites devem variar de acordo com a resolucão do octomap)
-    vector<vector<diane_octomap::Line*>> Filtered_Groups = FilterGroups(GroupLinesByRhoTheta, min_num_line, max_num_line);
+    ///Filtering groups of Line's which sizes exceeds a maximum amount or does not surpass a minimum amount
+    //(If the size does not surpass a minimum amount, it is considered a noise. If the size exceeds a maximum amount, it is considered a wall)
+    vector<vector<diane_octomap::Line*>> Filtered_Groups = FilterGroups(GroupLinesByRhoTheta);
 
 
-    //Obtendo os pontos para plot das linhas filtradas para o vídeo
-    for(int k=0; k<Filtered_Groups.size(); k++)
-    {
-        for(int l=0; l<Filtered_Groups.at(k).size(); l++)
-        {
-            Line* line = Filtered_Groups.at(k).at(l);
-
-            //Calculando o "a" da reta e um ponto da reta
-            float a;
-
-            if(line->Line_Theta > 90 && line->Line_Theta < 270)
-            {
-                a = tan((270 - line->Line_Theta) * (M_PI/180));
-            }
-            else
-            {
-                a = tan((90 + line->Line_Theta) * (M_PI/180));
-            }
-
-            float p_x = line->Line_Rho * cos(line->Line_Theta * M_PI/180);
-            float p_y = line->Line_Rho * sin(line->Line_Theta * M_PI/180);
+    ///Method that obtains and stores the points of the Filtered Line's
+    ExtractFilteredHoughLinesPoints(Filtered_Groups);
 
 
-            //Calculando os pontos iniciais e finais
-
-            MatrixXf LinePoints = MatrixXf(3, 2);
-
-            LinePoints(0,0) = x_min;
-            LinePoints(1,0) = p_y + a*(x_min - p_x);
-            LinePoints(2,0) = line->Line_Z;
-
-            LinePoints(0,1) = x_max;
-            LinePoints(1,1) = p_y + a*(x_max - p_x);
-            LinePoints(2,1) = line->Line_Z;
-
-            FilteredHoughLinesPoints.push_back(LinePoints);
-
-        }
-
-    }
-
-
-
-    ///Executando um Merge para cada grupo que passou pelo filtro de ocorrências
-    ///O Line final de cada grupo armazenará os Z's mínimo e máximo em que a linha, com o Rho e Theta descritos, ocorre.
+    ///Merging the Line's contained in a Group, that passed the occurrency filter.
+    ///The resultant Line object of each group keeps the minimum and maximum values of the Z-coordinate, in which the line was detected.
     vector<diane_octomap::Line*> Merged_Lines = MergeGroupedLines(Filtered_Groups);
 
 
-
-    ///Obtendo e armazenando em uma matriz as folhas pertencentes à cada Line (estão dentro dos limites de Z e estão dentro de uma distância tolerável escolhida)
+    ///Populating the Line's objects with the leaf's informations
     PopulateLinesWithMatrix(Merged_Lines, Grouped_Leafs_In_Matrix);
 
 
-    ///Segmentando os Line's por suas folhas (após ordenar as folhas, se houver um intervalo muito grande entre uma folha e outra, segmenta em dois novos Line's)
+    ///Segmenting the Line's by it's leafs (sorting the leafs and segmenting)
     vector<Line*> Segmented_Lines_With_Matrix = SegmentLinesWithMatrix(Merged_Lines);
 
 
-    ///Agrupando os Line's por Theta e pelo intervalo do segmento (intervalo [min_x, max_x] deslocado)
+    ///Grouping the Line s objects by (Theta, X-Interval of the segment)
     vector<vector<Line*>> GroupThetaIntervalLines = GroupLinesByThetaAndInterval(Segmented_Lines_With_Matrix);
 
 
-    ///Filtrando os grupos de Line's que não possuem um número suficiente de elementos para formar uma escada (variável configurável, por enquanto igual a 3)
-    vector<vector<Line*>> Filtered_Segmented_Groups;
-    for(int i=0; i<GroupThetaIntervalLines.size(); i++)
-    {
-        if(GroupThetaIntervalLines.at(i).size() >= Min_Num_Steps)
-        {
-            Filtered_Segmented_Groups.push_back(GroupThetaIntervalLines.at(i));
-        }
-    }
+    ///Filtering Groups of Line's that does not contains a number of number sufficient to generate a stairway
+    vector<vector<Line*>> Filtered_Segmented_Groups = FilterGroupedLines(GroupThetaIntervalLines);
 
 
-    ///Para cada grupo de Line's, aplicando um merge por Rho
-    //Retas em um grupo possuem o mesmo Theta e se possuírem Rho's parecidos, são considerados o mesmo Line.
-    //Cada novo Line sofre uma média ponderada utilizando os votos de cada Line, para o cálculo do novo Rho.
+    ///Merging the Line's contained in a group by Rho parameter
     vector<vector<Line*>> Merged_Segmented_Groups = MergeSegmentedGroupsLines(Filtered_Segmented_Groups);
 
 
-    ///Buscando uma sequência válida que seria referente à uma escada
+    ///Finding a valid sequence inside the Group of Lines
     vector<vector<Line*>> Filtered_Sequence = SequenceFilter(Merged_Segmented_Groups);
 
 
-
-    //Obtendo os pontos para plot dos segmentos de linhas sequenciadas e filtradas para o vídeo
-    for(int m=0; m<Filtered_Sequence.size(); m++)
-    {
-        for(int n=0; n<Filtered_Sequence.at(m).size(); n++)
-        {
-            Line* line = Filtered_Sequence.at(m).at(n);
-
-            //Calculando o "a" da reta e um ponto da reta
-            float a;
-
-            if(line->Line_Theta > 90 && line->Line_Theta < 270)
-            {
-                a = tan((270 - line->Line_Theta) * (M_PI/180));
-            }
-            else
-            {
-                a = tan((90 + line->Line_Theta) * (M_PI/180));
-            }
-
-            float p_x = line->Line_Rho * cos(line->Line_Theta * M_PI/180);
-            float p_y = line->Line_Rho * sin(line->Line_Theta * M_PI/180);
+    ///Method that obtains and stores the points of the Sequences Line's Segments
+    ExtractSequencedLinesSegmentsPoints(Filtered_Sequence);
 
 
-            //Selecionando o mínimo e o máximo X presente na Line.
-            float Min_X, Max_X;
-
-            Min_X = line->Leafs_Of_Line(0, 0);
-            Max_X = line->Leafs_Of_Line(0, line->Leafs_Of_Line.cols() - 1);
-
-
-
-            //Calculando os pontos iniciais e finais
-            if(fabs((line->max_Z - line->min_Z)) < 0.40)
-            {
-                for(int o=0; o<=round(fabs((line->max_Z - line->min_Z))/0.05); ++o)
-                {
-                    MatrixXf LinePoints = MatrixXf(3, 2);
-
-                    LinePoints(0,0) = Min_X;
-                    LinePoints(1,0) = p_y + a*(Min_X - p_x);
-                    LinePoints(2,0) = line->min_Z + 0.05*o;
-
-                    LinePoints(0,1) = Max_X;
-                    LinePoints(1,1) = p_y + a*(Max_X - p_x);
-                    LinePoints(2,1) = line->min_Z + 0.05*o;
-
-                    SequencedLinesSegmentsPoints.push_back(LinePoints);
-
-                }
-
-            }
-            else
-            {
-                for(int p=0; p<4; ++p)
-                {
-                    MatrixXf LinePoints = MatrixXf(3, 2);
-
-                    LinePoints(0,0) = Min_X;
-                    LinePoints(1,0) = p_y + a*(Min_X - p_x);
-                    LinePoints(2,0) = line->max_Z - 0.05*p;
-
-                    LinePoints(0,1) = Max_X;
-                    LinePoints(1,1) = p_y + a*(Max_X - p_x);
-                    LinePoints(2,1) = line->max_Z - 0.05*p;
-
-                    SequencedLinesSegmentsPoints.push_back(LinePoints);
-
-                }
-
-            }
-
-        }
-
-    }
-
-
-
-
-    ///Criando os candidatos à escada, à partir dos grupos de Line's.
-    //Cada grupo representa uma escada e cada Line nesse grupo representa um degrau da escada.
+    ///Creating the Stair candidates objects from the groups of Line's
+    //Each Group represents a stairway and each Line in a group represents a Step
     vector<Stair*> StairCandidates = CreateStairCandidatesWithMatrix(Filtered_Sequence);
 
 
     ///Encontrando Rho's e Theta's melhores para cada escada, utilizando mínimos quadrados sobre as folhas dessas Line's
+    ///Discovering optimized Rho's and Theta's parameters for each Stair, applying Least Square to the Line's Leafs
     UpdateStairProperties(StairCandidates);
 
 
@@ -466,141 +350,105 @@ void diane_octomap::DianeOctomap::StairDetection2D()
     Modeled_Stairs = ModelStairsWithMatrix(StairCandidates);
 
 //    WriteModeledStairPropertiesToFile(Modeled_Stairs.at(0));
-
-    double time_e = clock();
-    cout<< (time_e - time_i)/(CLOCKS_PER_SEC / 1000) <<endl;
-    cout<<endl;
-
 }
 
 
 
 
 //-----------------------------------------Métodos utilizando Matriz-----------------------------------------------
-vector<MatrixXf> diane_octomap::DianeOctomap::GroupPlanesByXY(MatrixXf Leafs)
+vector<MatrixXf> diane_octomap::DianeOctomap::GroupLeafsByXY(MatrixXf Leafs)
 {
+    //Vector containing the columns of points (grouped by (X,Y) coordinates)
     vector<MatrixXf> GroupedXY;
-    for (int i = 0; i < Leafs.cols();++i)
+
+    //Temporary vector containing the columns of points (grouped by (X,Y) coordinates)
+    vector<MatrixXf> GroupedXYTemp;
+
+
+    for(int i=0; i<Leafs.cols(); ++i)
     {
         bool group_not_found = true;
 
-        //Buscando o grupo da folha (mesmo par (X,Y))
-        for(int j = 0; j<GroupedXY.size() ; ++j)
+        //Finding the leaf's group (same (X,Y) coordinates)
+        for(int j=0; j<GroupedXYTemp.size(); ++j)
         {
-            if(GroupedXY.at(j)(0,0) == Leafs(0,i) && GroupedXY.at(j)(1,0) == Leafs(1,i))
+            if(GroupedXYTemp.at(j)(0,0) == Leafs(0,i) && GroupedXYTemp.at(j)(1,0) == Leafs(1,i))
             {
-                GroupedXY.at(j).conservativeResize(3, GroupedXY.at(j).cols() +1);
-                GroupedXY.at(j)( 0 , GroupedXY.at(j).cols() - 1) = Leafs( 0 , i);
-                GroupedXY.at(j)( 1 , GroupedXY.at(j).cols() - 1) = Leafs( 1 , i);
-                GroupedXY.at(j)( 2 , GroupedXY.at(j).cols() - 1) = Leafs( 2 , i);
+                GroupedXYTemp.at(j).conservativeResize(3, GroupedXYTemp.at(j).cols() +1);
+                GroupedXYTemp.at(j)(0, GroupedXYTemp.at(j).cols() - 1) = Leafs(0, i);
+                GroupedXYTemp.at(j)(1, GroupedXYTemp.at(j).cols() - 1) = Leafs(1, i);
+                GroupedXYTemp.at(j)(2, GroupedXYTemp.at(j).cols() - 1) = Leafs(2, i);
                 group_not_found = false;
                 break;
             }
         }
 
-        //Se não encontrou um grupo, cria um novo
+        //If no group was found, create a new one
         if(group_not_found)
         {
-            MatrixXf newMatrix2d = MatrixXf(3, 1);
-            newMatrix2d(0,0) = Leafs( 0 , i );
-            newMatrix2d(1,0) = Leafs( 1 , i );
-            newMatrix2d(2,0) = Leafs( 2 , i ) ;
-            GroupedXY.push_back(newMatrix2d);
+            MatrixXf new2DMatrix = MatrixXf(3, 1);
+            new2DMatrix(0,0) = Leafs(0, i);
+            new2DMatrix(1,0) = Leafs(1, i);
+            new2DMatrix(2,0) = Leafs(2, i) ;
+            GroupedXYTemp.push_back(new2DMatrix);
+        }
+
+    }
+
+    //Filtering the groups by column size
+    for(int k=0; k<GroupedXYTemp.size(); ++k)
+    {
+        MatrixXf LeafColumn = GroupedXYTemp.at(k);
+
+        if((LeafColumn.cols()>ColumnMinSize) && (LeafColumn.cols()<ColumnMaxSize))
+        {
+            GroupedXY.push_back(LeafColumn);
         }
 
     }
 
     return GroupedXY;
-}
 
-vector<MatrixXf> diane_octomap::DianeOctomap::GroupPlanesByZ(vector<MatrixXf> Leafs)
-{
-    vector<MatrixXf> Grouped2D;
-
-    First_Filtered_Points.conservativeResize(3, octree->getNumLeafNodes());
-
-    int First_Filtered_Count = 0;
-
-
-    for (int i=0; i < Leafs.size();++i )
-    {
-        if(Leafs.at(i).cols()>0 && Leafs.at(i).cols()<6 )
-        {
-            for(int k = 0; k < Leafs.at(i).cols();++k)
-            {
-                //Adicionando a folha na estrutura referente para o vídeo
-                First_Filtered_Points(0, First_Filtered_Count) = (double)Leafs.at(i)(0, k);
-                First_Filtered_Points(1, First_Filtered_Count) = (double)Leafs.at(i)(1, k);
-                First_Filtered_Points(2, First_Filtered_Count) = (double)Leafs.at(i)(2, k);
-
-                ++First_Filtered_Count;
-
-
-                bool group_not_found = true;
-
-                //Buscando o grupo da fiolha (mesmo Z)
-                for(int j = 0; j<Grouped2D.size() ; ++j)
-                {
-                    if(Grouped2D.at(j)(2,0) == Leafs.at(i)(2,k))
-                    {
-                        Grouped2D.at(j).conservativeResize(3, Grouped2D.at(j).cols() +1);
-                        Grouped2D.at(j)( 0 , Grouped2D.at(j).cols() - 1) = Leafs.at(i)( 0 , k);
-                        Grouped2D.at(j)( 1 , Grouped2D.at(j).cols() - 1) = Leafs.at(i)( 1 , k);
-                        Grouped2D.at(j)( 2 , Grouped2D.at(j).cols() - 1) = Leafs.at(i)( 2 , k);
-                        group_not_found = false;
-                        break;
-                    }
-                }
-
-                //Se não encontrou um grupo, cria um novo
-                if(group_not_found)
-                {
-                    MatrixXf newMatrix2d = MatrixXf(3, 1);
-                    newMatrix2d(0,0) = Leafs.at(i)( 0 , k );
-                    newMatrix2d(1,0) = Leafs.at(i)( 1 , k );
-                    newMatrix2d(2,0) = Leafs.at(i)( 2 , k ) ;
-                    Grouped2D.push_back(newMatrix2d);
-                }
-            }
-        }
-    }
-
-    First_Filtered_Points.conservativeResize(3, First_Filtered_Count);
-
-
-    return Grouped2D;
 }
 
 
-vector<MatrixXf> diane_octomap::DianeOctomap::GroupPlanesByZ(MatrixXf Leafs)
+vector<MatrixXf> diane_octomap::DianeOctomap::GroupLeafsByZ(vector<MatrixXf> LeafColumns)
 {
+    //Vector containing the points that have the same Z coordinate
     vector<MatrixXf> Grouped2D;
-    for (int i = 0; i < Leafs.cols();++i)
+
+
+    for(int i=0; i<LeafColumns.size(); ++i)
     {
-        bool group_not_found = true;
-
-        //Buscando o grupo da fiolha (mesmo Z)
-        for(int j = 0; j<Grouped2D.size() ; ++j)
+        for(int j=0; j<LeafColumns.at(i).cols(); ++j)
         {
-            if(Grouped2D.at(j)(2,0) == Leafs(2,i))
+            bool group_not_found = true;
+
+            //Finding the leaf's group (same Z coordinates)
+            for(int k=0; k<Grouped2D.size(); ++k)
             {
-                Grouped2D.at(j).conservativeResize(3, Grouped2D.at(j).cols() +1);
-                Grouped2D.at(j)( 0 , Grouped2D.at(j).cols() - 1) = Leafs( 0 , i);
-                Grouped2D.at(j)( 1 , Grouped2D.at(j).cols() - 1) = Leafs( 1 , i);
-                Grouped2D.at(j)( 2 , Grouped2D.at(j).cols() - 1) = Leafs( 2 , i);
-                group_not_found = false;
-                break;
-            }
-        }
+                if(Grouped2D.at(k)(2,0) == LeafColumns.at(i)(2, j))
+                {
+                    Grouped2D.at(k).conservativeResize(3, Grouped2D.at(k).cols() + 1);
+                    Grouped2D.at(k)(0 , Grouped2D.at(k).cols() - 1) = LeafColumns.at(i)(0, j);
+                    Grouped2D.at(k)(1 , Grouped2D.at(k).cols() - 1) = LeafColumns.at(i)(1 ,j);
+                    Grouped2D.at(k)(2 , Grouped2D.at(k).cols() - 1) = LeafColumns.at(i)(2 ,j);
+                    group_not_found = false;
+                    break;
+                }
 
-        //Se não encontrou um grupo, cria um novo
-        if(group_not_found)
-        {
-            MatrixXf newMatrix2d = MatrixXf(3, 1);
-            newMatrix2d(0,0) = Leafs( 0 , i );
-            newMatrix2d(1,0) = Leafs( 1 , i );
-            newMatrix2d(2,0) = Leafs( 2 , i ) ;
-            Grouped2D.push_back(newMatrix2d);
+            }
+
+            //If no group was found, create a new one
+            if(group_not_found)
+            {
+                MatrixXf new2DMatrix = MatrixXf(3, 1);
+                new2DMatrix(0,0) = LeafColumns.at(i)(0, j);
+                new2DMatrix(1,0) = LeafColumns.at(i)(1, j);
+                new2DMatrix(2,0) = LeafColumns.at(i)(2, j);
+                Grouped2D.push_back(new2DMatrix);
+            }
+
         }
 
     }
@@ -610,13 +458,11 @@ vector<MatrixXf> diane_octomap::DianeOctomap::GroupPlanesByZ(MatrixXf Leafs)
 }
 
 
-vector<double> diane_octomap::DianeOctomap::GetSpaceParameters(MatrixXf Leafs)
+void diane_octomap::DianeOctomap::GetSpaceParameters(MatrixXf Leafs)
 {
-    vector<double> result;
-
     double max_x = -1000, min_x = 1000, max_y = -1000, min_y = 1000;
 
-    for(int i = 0; i < Leafs.cols() ; i++)
+    for(int i=0; i<Leafs.cols(); i++)
     {
 
         if(Leafs(0, i) < min_x)
@@ -639,38 +485,35 @@ vector<double> diane_octomap::DianeOctomap::GetSpaceParameters(MatrixXf Leafs)
 
     }
 
-    double length = max_x - min_x;
-    double width = max_y - min_y;
 
-    x_min = min_x;
-    x_max = max_x;
-    y_min = min_y;
-    y_max = max_y;
+    SpaceLength = max_x - min_x;
+    SpaceWidth = max_y - min_y;
 
-    result.push_back(length);
-    result.push_back(width);
-
-    return result;
+    SpaceXMin = min_x;
+    SpaceXMax = max_x;
+    SpaceYMin = min_y;
+    SpaceYMax = max_y;
 
 }
 
 
-vector<vector<diane_octomap::Line*>> diane_octomap::DianeOctomap::LineHoughTransform(double Space_Length, double Space_Width, vector<MatrixXf> Leafs)
+
+vector<vector<diane_octomap::Line*>> diane_octomap::DianeOctomap::LineHoughTransform(vector<MatrixXf> Leafs)
 {
     vector<vector<Line*>> Group_Lines;
 
-    //Parametros que serao usados para criar o espaço de Hough
+    //Parameters used to generate the Hough's Space
     Rho_Min = 0;
-    Rho_Max = ceil(sqrt(pow(Space_Length, 2) + pow(Space_Width, 2)));
+    Rho_Max = ceil(sqrt(pow(SpaceLength, 2) + pow(SpaceWidth, 2)));
     Theta_Min = 0;
     Theta_Max = 360;
 
-    //Obtendo o numero de divisoes no eixo de Rho e no eixo de Theta
+    //Calculating the number of divisions on the Rho Axis and Theta Axis
     Rho_Num = (Rho_Max - Rho_Min)/Rho_Passo;
     Theta_Num = (Theta_Max - Theta_Min)/Theta_Passo;
 
-    //Executando a Transformada de Hough para cada grupo
-    for (int i=0; i<Leafs.size() ; i++)
+    //Executing the Hough Transform for each group
+    for (int i=0; i<Leafs.size(); i++)
     {
         vector<vector<int>> Votes = Accumulation2D(Leafs.at(i));
 
@@ -690,14 +533,12 @@ vector<vector<int>> diane_octomap::DianeOctomap::Accumulation2D(MatrixXf LeafZ)
     vector<int> addAccumulate;
     bool add = false;
 
-    double Acumulate_Dist_Tol = 0.025; //0.025
-
-    //Criando o espaço de Hough
-    for(int j=0 ; j < Rho_Num ; j++)
+    //Creating the Hough's Space
+    for(int i=0; i<Rho_Num ; i++)
     {
         if(add == false)
         {
-            for(int k=0 ; k < Theta_Num ; k++)
+            for(int j=0; j<Theta_Num; j++)
             {
                 addAccumulate.push_back(0);
             }
@@ -709,24 +550,24 @@ vector<vector<int>> diane_octomap::DianeOctomap::Accumulation2D(MatrixXf LeafZ)
 
     }
 
-    //Realizando a votacão para cada folha na matriz
+    //Voting process using the points in the matrix
     for (int k=0; k<Theta_Num; k++)
     {
-        float Theta = (Theta_Min + k*Theta_Passo+Theta_Passo/2) * (M_PI/180);
+        float Theta = (Theta_Min + k*Theta_Passo + Theta_Passo/2) * (M_PI/180);
         float ctheta = cos(Theta);
         float stheta = sin(Theta);
 
-        for(int j=0; j<Rho_Num; j++)
+        for(int l=0; l<Rho_Num; l++)
         {
-            float Rho = (Rho_Min + (j+0.5)*Rho_Passo);
+            float Rho = (Rho_Min + (l+0.5)*Rho_Passo);
 
-            for (int l=0; l<LeafZ.cols(); l++)
+            for (int m=0; m<LeafZ.cols(); m++)
             {
-                float Rho_point = LeafZ(0, l)*ctheta + LeafZ(1, l)*stheta;
+                float Rho_point = LeafZ(0, m)*ctheta + LeafZ(1, m)*stheta;
 
-                if (fabs(Rho_point - Rho) <= Acumulate_Dist_Tol)
+                if (fabs(Rho_point - Rho) <= AccumulateDistTolerance)
                 {
-                    Accumulate2d.at(j).at(k) = Accumulate2d.at(j).at(k)+ 1;
+                    Accumulate2d.at(l).at(k) = Accumulate2d.at(l).at(k)+ 1;
                 }
 
             }
@@ -740,19 +581,17 @@ vector<vector<int>> diane_octomap::DianeOctomap::Accumulation2D(MatrixXf LeafZ)
 }
 
 
-//Criando os objetos Line's olhando para a votaçao que foi feita, e retorna o grupo de todas elas.
+//Creating the Line's objects, considering the voting process results. Returns every Line that received a minimum amount of votes.
 vector<diane_octomap::Line*> diane_octomap::DianeOctomap::CreateGroupLines(vector<vector<int>> Votes, float Z)
 {
     vector<Line*> Lines;
-
-    int Min_Votes = 10; //10
 
     for (int i=0; i<Votes.size(); i++)
     {
         for(int j=0; j<Votes.at(i).size(); j++)
         {
-            //Criando o objeto Line caso tenha uma certa quantidade de votos
-            if(Votes.at(i).at(j) > Min_Votes)
+            //Create the Line object, if it received a minimum amount of votes
+            if(Votes.at(i).at(j) > MinAmountVotes)
             {
                 Line* line = new Line();
                 line->Line_Rho = (Rho_Min + (i+0.5) * Rho_Passo);
@@ -779,7 +618,7 @@ vector<vector<diane_octomap::Line*>> diane_octomap::DianeOctomap::GroupLineByRho
     double Theta;
     double Rho;
 
-    //Separando os Lines por Rho e por Theta
+    //Grouping the Line's by Rho and Theta parameters
     for(int i=0; i<Lines.size(); i++)
     {
         for (int k=0; k<Lines.at(i).size(); k++)
@@ -789,7 +628,7 @@ vector<vector<diane_octomap::Line*>> diane_octomap::DianeOctomap::GroupLineByRho
 
              bool Group_Found = false;
 
-             //Verificando se o Rho e o Theta já fazem parte de um grupo
+             //Verify if (Rho, Theta) parameters belongs to a created group.
              for(int j=0; j<GroupedLineByTheta.size(); j++)
              {
                  if((Theta == GroupedLineByTheta.at(j).at(0)->Line_Theta) && (Rho == GroupedLineByTheta.at(j).at(0)->Line_Rho))
@@ -803,9 +642,9 @@ vector<vector<diane_octomap::Line*>> diane_octomap::DianeOctomap::GroupLineByRho
 
              }
 
+             //If no group was found, create a new group
              if(Group_Found == false)
              {
-                 //Se o grupo não foi encontrado, cria um novo grupo
                  vector<diane_octomap::Line*> NewGroup;
                  NewGroup.push_back(Lines.at(i).at(k));
 
@@ -821,14 +660,14 @@ vector<vector<diane_octomap::Line*>> diane_octomap::DianeOctomap::GroupLineByRho
 }
 
 
-//Filtra os grupos no qual o numero de retas possam forma um degrau, no qual o max e min depende da resoluçao do octomap
-vector<vector<diane_octomap::Line*>> diane_octomap::DianeOctomap::FilterGroups(vector<vector<diane_octomap::Line*>> GroupLineByTheta, int Min_Size, int Max_Size)
+//Filtering groups of Line's which sizes exceeds a maximum amount or does not surpass a minimum amount
+vector<vector<diane_octomap::Line*>> diane_octomap::DianeOctomap::FilterGroups(vector<vector<diane_octomap::Line*>> GroupLineByTheta)
 {
     vector<vector<diane_octomap::Line*>> FilterGroups;
 
     for (int i=0; i<GroupLineByTheta.size(); i++)
     {
-        if((GroupLineByTheta.at(i).size() >= Min_Size) && (GroupLineByTheta.at(i).size() <= Max_Size))
+        if((GroupLineByTheta.at(i).size() >= MinNumberLines) && (GroupLineByTheta.at(i).size() <= MaxNumberLines))
         {
             FilterGroups.push_back(GroupLineByTheta.at(i));
         }
@@ -895,7 +734,7 @@ void diane_octomap::DianeOctomap::PopulateLinesWithMatrix(vector<diane_octomap::
         {
             MatrixXf Leaf_Group = Leaf_Groups_In_Matrix.at(j);
 
-            //Verificando se o Grupo de folhas está dentro dos limites de Z permitidos pelo Line
+            //Verify if the Group of Leaf's Z-coordinate is contained inside the Line's limits of Z.
             if((Leaf_Group(2, 0)  >= Merged_Lines.at(i)->min_Z) && (Leaf_Group(2, 0)  <= Merged_Lines.at(i)->max_Z))
             {
                 for(int k=0; k<Leaf_Group.cols(); k++)
@@ -909,13 +748,13 @@ void diane_octomap::DianeOctomap::PopulateLinesWithMatrix(vector<diane_octomap::
 
                     if(fabs(Rho_Point - Rho) <= Rho_Passo/2)
                     {
-                        //Se a matriz estiver vazia, inclui a nova folha
+                        //If the Line's leaf matrix is empty, includes the new leaf.
                         if(Merged_Lines.at(i)->Leafs_Of_Line.cols() == 0)
                         {
                             int Actual_Size = Merged_Lines.at(i)->Leafs_Of_Line.cols();
                             Merged_Lines.at(i)->Leafs_Of_Line.conservativeResize(3, Actual_Size + 1);
 
-                            //Adicionando as informacoes da nova folha
+                            //Including the leaf's informations.
                             Merged_Lines.at(i)->Leafs_Of_Line(0, Actual_Size) = Accessed_Leaf(0, 0);
                             Merged_Lines.at(i)->Leafs_Of_Line(1, Actual_Size) = Accessed_Leaf(1, 0);
                             Merged_Lines.at(i)->Leafs_Of_Line(2, Actual_Size) = Accessed_Leaf(2, 0);
@@ -923,13 +762,13 @@ void diane_octomap::DianeOctomap::PopulateLinesWithMatrix(vector<diane_octomap::
                         }
                         else
                         {
-                            //Se não estiver vazia, verifica se a folha já pertence à Matriz
+                            //If it is not empty, check if the leaf is not contained in the group.
                             if((GroupContainsLeaf(Merged_Lines.at(i)->Leafs_Of_Line, Accessed_Leaf)) == false)
                             {
                                 int Actual_Size = Merged_Lines.at(i)->Leafs_Of_Line.cols();
                                 Merged_Lines.at(i)->Leafs_Of_Line.conservativeResize(3, Actual_Size + 1);
 
-                                //Adicionando as informacoes da nova folha
+                                //Including the leaf's information.
                                 Merged_Lines.at(i)->Leafs_Of_Line(0, Actual_Size) = Accessed_Leaf(0, 0);
                                 Merged_Lines.at(i)->Leafs_Of_Line(1, Actual_Size) = Accessed_Leaf(1, 0);
                                 Merged_Lines.at(i)->Leafs_Of_Line(2, Actual_Size) = Accessed_Leaf(2, 0);
@@ -947,7 +786,7 @@ void diane_octomap::DianeOctomap::PopulateLinesWithMatrix(vector<diane_octomap::
 
         }
 
-        //Após popular as folhas, atualiza os limites de X e de Z da linha
+        //After the population process ends, update the X and Z limits of the Line.
         Merged_Lines.at(i)->UpdateLimitsWithMatrix();
 
     }
@@ -982,16 +821,14 @@ vector<diane_octomap::Line*> diane_octomap::DianeOctomap::SegmentLinesWithMatrix
     {
         Line* Accessed_Line = Lines.at(i);
 
-        //Ordenando a matriz de folhas por X (para realizar a segmentacão)
+        //Sorting the matrix of leafs by X-coordinate
         Accessed_Line->SortLeafMatrixByX();
 
 
-        double Tolerance_X = 0.11; //0.11
-
-        //Para cada folha, verifica se a distância em X para a próxima ultrapassa a tolerância
+        //Foreach leaf, verify if the distance in X to the next leaf surpass the tolerance
         for(int j=0; j<Accessed_Line->Leafs_Of_Line.cols() - 1; j++)
         {
-            if((fabs(Accessed_Line->Leafs_Of_Line(0, j) - Accessed_Line->Leafs_Of_Line(0, j+1)) > Tolerance_X ))
+            if((fabs(Accessed_Line->Leafs_Of_Line(0, j) - Accessed_Line->Leafs_Of_Line(0, j+1)) > SegmentationXTol ))
             {
                 NewLine_break = true;
 
@@ -1004,7 +841,7 @@ vector<diane_octomap::Line*> diane_octomap::DianeOctomap::SegmentLinesWithMatrix
                 NewLine2->Line_Rho = Accessed_Line->Line_Rho;
                 NewLine2->Line_Theta = Accessed_Line->Line_Theta;
 
-                //Armazenando as folhas do primeiro segmento na 1a linha nova
+                //Storing the leafs of the first segment on the first new Line object
                 for(int k=0; k<=j; k++)
                 {
                     int Actual_Size = NewLine1->Leafs_Of_Line.cols();
@@ -1015,7 +852,7 @@ vector<diane_octomap::Line*> diane_octomap::DianeOctomap::SegmentLinesWithMatrix
                     NewLine1->Leafs_Of_Line(2, k) = Accessed_Line->Leafs_Of_Line(2, k);
                 }
 
-                //Armazenando as folhas restantes na 2a linha nova
+                //Storing the leafs of the second segment on the second new Line object
                 for(int l=j+1; l<Accessed_Line->Leafs_Of_Line.cols(); l++)
                 {
                     int Actual_Size = NewLine2->Leafs_Of_Line.cols();
@@ -1024,18 +861,17 @@ vector<diane_octomap::Line*> diane_octomap::DianeOctomap::SegmentLinesWithMatrix
                     NewLine2->Leafs_Of_Line(0, Actual_Size) = Accessed_Line->Leafs_Of_Line(0, l);
                     NewLine2->Leafs_Of_Line(1, Actual_Size) = Accessed_Line->Leafs_Of_Line(1, l);
                     NewLine2->Leafs_Of_Line(2, Actual_Size) = Accessed_Line->Leafs_Of_Line(2, l);
-
                 }
 
-                //Atualizando os Votos
+                //Updating the Votes of the Line's
                 NewLine1->Line_Votes = NewLine1->Leafs_Of_Line.cols();
                 NewLine2->Line_Votes = NewLine2->Leafs_Of_Line.cols();
 
-                //Atualizando os limites
+                //Updateing the limits of the Line's
                 NewLine1->UpdateLimitsWithMatrix();
                 NewLine2->UpdateLimitsWithMatrix();
 
-                //Garantindo que estarão ordenados por X
+                //Sorting the leafs by X-coordinate
                 NewLine1->SortLeafMatrixByX();
                 NewLine2->SortLeafMatrixByX();
 
@@ -1048,8 +884,7 @@ vector<diane_octomap::Line*> diane_octomap::DianeOctomap::SegmentLinesWithMatrix
 
         }
 
-        //Se ocorreu segmentacão para uma linha, interrompe o loop e chama a funcao recursiva novamente.
-        //Se não ocorreu para essa linha, verifica a próxima
+        //If a segmentation happened for a Line, breaks the loop and calls the recursive function again.
         if(NewLine_break)
         {
             break;
@@ -1061,7 +896,7 @@ vector<diane_octomap::Line*> diane_octomap::DianeOctomap::SegmentLinesWithMatrix
 
     }
 
-    //Se ocorreu break, completa a lista com o resto dos Lines e chama a funcao novamente
+    //If a break happened, complete the list with the rest of the Line's and calls the recursive function again.
     if(NewLine_break)
     {
         for(int m=i+1; m<Lines.size(); m++)
@@ -1083,7 +918,7 @@ vector<diane_octomap::Line*> diane_octomap::DianeOctomap::SegmentLinesWithMatrix
 }
 
 
-//Agrupando as linhas que possuem o mesmo Theta e limites de X (min_X e max_X)
+//Grouping the Line's objects by the same Theta and Limits of X (min_X and max_X properties)
 vector<vector<diane_octomap::Line*>> diane_octomap::DianeOctomap::GroupLinesByThetaAndInterval(vector<diane_octomap::Line*> Segmented_Lines)
 {
     vector<vector<Line*>> Groups_Lines;
@@ -1092,16 +927,16 @@ vector<vector<diane_octomap::Line*>> diane_octomap::DianeOctomap::GroupLinesByTh
     {
         Line* line = Segmented_Lines.at(i);
         double line_rho = line->Line_Rho;
-        double line_theta = line->Line_Theta;   //Em graus
+        double line_theta = line->Line_Theta;   //In degrees
 
         bool group_found = false;
 
         for(int j=0; j<Groups_Lines.size(); j++)
         {
-            //Se a linha possuir um theta igual ao de um grupo, verifica se o segmento da nova linha possui limites de X condizentes com o da primeira linha do grupo
+            //If the Line's Theta property equals a Group's Theta property, verify if the Line segment has X limits consistent with the X limits of the first Line of the Group.
             if(line_theta == Groups_Lines.at(j).at(0)->Line_Theta)
             {
-                //Calculando a normal da reta (para verificar a posicão do intervalo em X na reta da 1a linha)
+                //Obtaining the normal of the line (needed for verification of the X interval position of the first line)
                 double line_normal[2];
                 line_normal[0] = cos(line_theta * (M_PI/180));
                 line_normal[1] = sin(line_theta * (M_PI/180));
@@ -1112,10 +947,8 @@ vector<vector<diane_octomap::Line*>> diane_octomap::DianeOctomap::GroupLinesByTh
                 double temp_max_X = line->max_X - (dist*line_normal[0]);
 
 
-                //Se as distâncias entre os mínimos dos intervalos e entre os máximos dos intervalos estiverem dentro da tolerância, adiciona a nova linha nesse grupo
-                double X_Tolerance = 0.15; //0.11
-
-                if((fabs(temp_min_X - Groups_Lines.at(j).at(0)->min_X) <= X_Tolerance) && (fabs(temp_max_X - Groups_Lines.at(j).at(0)->max_X) <= X_Tolerance))
+                //If the distances between the minimum values of the intervals and between the maximum values of the intervals are inside the tolerance, the new Line is added in the Group.
+                if((fabs(temp_min_X - Groups_Lines.at(j).at(0)->min_X) <= IntervalXTol) && (fabs(temp_max_X - Groups_Lines.at(j).at(0)->max_X) <= IntervalXTol))
                 {
                     Groups_Lines.at(j).push_back(line);
                     group_found = true;
@@ -1127,13 +960,13 @@ vector<vector<diane_octomap::Line*>> diane_octomap::DianeOctomap::GroupLinesByTh
 
         }
 
-        //Se não encontrou um grupo válido (mesmo Theta e com intervalo dentro dos limites determinados pelo grupo), cria um novo.
+        //If no valid group was found, creates a new one.
         if(group_found == false)
         {
             vector<Line*> Group_Lines;
             Group_Lines.push_back(line);
 
-            //Adicionando o novo grupo
+            //Adding a new group
             Groups_Lines.push_back(Group_Lines);
         }
 
@@ -1144,21 +977,40 @@ vector<vector<diane_octomap::Line*>> diane_octomap::DianeOctomap::GroupLinesByTh
 }
 
 
+vector<vector<diane_octomap::Line*>> diane_octomap::DianeOctomap::FilterGroupedLines(vector<vector<diane_octomap::Line*>> GroupThetaIntervalLines)
+{
+    vector<vector<Line*>> Filtered_Segmented_Groups;
+
+    for(int i=0; i<GroupThetaIntervalLines.size(); i++)
+    {
+        if(GroupThetaIntervalLines.at(i).size() >= MinNumSteps)
+        {
+            Filtered_Segmented_Groups.push_back(GroupThetaIntervalLines.at(i));
+        }
+    }
+
+    return Filtered_Segmented_Groups;
+
+}
+
+
+
+
 vector<vector<diane_octomap::Line*>> diane_octomap::DianeOctomap::MergeSegmentedGroupsLines(vector<vector<diane_octomap::Line*>> GroupThetaIntervalLines)
 {
     vector<vector<Line*>> Merged_Segmented_Lines;
 
-    //Para cada grupo, aplica o merge por Rho
+    //Apply the merge for each group
     for(int i=0; i<GroupThetaIntervalLines.size(); i++)
     {
         vector<Line*> Merged_Lines = MergeSegmentedGroup(GroupThetaIntervalLines.at(i));
 
-        if(Merged_Lines.size() >= Min_Num_Steps)
+        if(Merged_Lines.size() >= MinNumSteps)
         {
-            //Ordenando as linhas no grupo por Rho
+            //Sorting the Line's of a group by Rho
             vector<Line*> Sorted_Lines = SortGroupLines(Merged_Lines);
 
-            //Adicionando o grupo que passou pelo Merge e pelo Sort no retorno
+            //Storing the group of Line's that passed through the Merge and Sort
             Merged_Segmented_Lines.push_back(Sorted_Lines);
         }
 
@@ -1174,22 +1026,22 @@ vector<diane_octomap::Line*> diane_octomap::DianeOctomap::MergeSegmentedGroup(ve
 
     Line* NewLine = new Line();
 
-    int i = 0, j = 0;
+    int i=0, j=0;
 
 
     bool merge_break = false;
 
-    //Buscando dois Lines no grupo que possam fazer merge
+    //Finding two Line's in the group that can be merged by Rho
     if(SegmentedGroupLines.size() > 0)
     {
-        //Para cada Line, verifica se cada um dos Lines seguintes podem ser agrupados com o inicial
+        //For each Line, verify if each next Line can be merged with it
         for(i=0; i<SegmentedGroupLines.size() - 1; i++)
         {
             for(j=i+1; j<SegmentedGroupLines.size(); j++)
             {
                 if(CanMergeLines(SegmentedGroupLines.at(i), SegmentedGroupLines.at(j)))
                 {
-                    //Se dois Lines forem marcados como mergeable, executa o MergeSegmentedGroup de novo, repassando o novo SegmentedGroupLines (com o novo Line e sem os dois antigos)
+                    //If two Line's can be merged, breaks and calls the MergeSegmentedGroup again, with the new group of Lines.
                     NewLine = FitLineWithMatrix(SegmentedGroupLines.at(i), SegmentedGroupLines.at(j));
                     merge_break = true;
                     break;
@@ -1212,7 +1064,7 @@ vector<diane_octomap::Line*> diane_octomap::DianeOctomap::MergeSegmentedGroup(ve
 
         temp_Lines.push_back(NewLine);
 
-        //Copiando os planos antigos para o vetor temporário
+        //Copying the initial Line's to the temporary vector
         for(int ii=0; ii<i; ii++)
         {
             temp_Lines.push_back(SegmentedGroupLines.at(ii));
@@ -1226,13 +1078,13 @@ vector<diane_octomap::Line*> diane_octomap::DianeOctomap::MergeSegmentedGroup(ve
             temp_Lines.push_back(SegmentedGroupLines.at(kk));
         }
 
-        //Recursão para obter somente os Lines aglutinados finais
+        //Recursive call to obtain the final merged Line's
         Merged_Lines = MergeSegmentedGroup(temp_Lines);
 
     }
     else
     {
-        //Se não existirem mais Lines a serem aglutinados, retorna o vetor que foi recebido
+        //If no mergeable Line's were found, returns the Group of Lines received
         Merged_Lines = SegmentedGroupLines;
     }
 
@@ -1250,8 +1102,8 @@ bool diane_octomap::DianeOctomap::CanMergeLines(Line* LineA, Line* LineB)
     double RhoB = LineB->Line_Rho;
 
 
-    //Se a distância em Rho for menor do que um delta,
-    if((fabs(RhoA - RhoB) <= delta_merge_Rho))
+    //If the distance of Rho between the Line's is smaller than a tolerance, it can be merged.
+    if((fabs(RhoA - RhoB) <= MergeDeltaRhoTol))
     {
         Result = true;
     }
@@ -1264,8 +1116,7 @@ bool diane_octomap::DianeOctomap::CanMergeLines(Line* LineA, Line* LineB)
 
 diane_octomap::Line* diane_octomap::DianeOctomap::FitLineWithMatrix(diane_octomap::Line* LineA, diane_octomap::Line* LineB)
 {
-    //Inicialmente, o Line resultante possuirá parâmetros RHO e THETA iguais às médias ponderadas dos parâmetros dos planos recebidos, onde o peso é a quantidade de votos.
-
+    //The resultant Line will have the Rho and Theta parameters calculated by the weighted average od the received Line's, where the number of votes were used as the weight
     Line* Result_Line = new Line();
 
     double Rho = (LineA->Line_Rho * LineA->Line_Votes + LineB->Line_Rho * LineB->Line_Votes)/(LineA->Line_Votes + LineB->Line_Votes);
@@ -1283,7 +1134,7 @@ diane_octomap::Line* diane_octomap::DianeOctomap::FitLineWithMatrix(diane_octoma
     Result_Line->Line_Votes = Votes;
 
 
-    //Repassando as folhas dos Lines antigos para o novo Line
+    //Passing the leafs of the old Lines to the new one
     for(int i=0; i<LineA->Leafs_Of_Line.cols(); i++)
     {
         Vector3f leafA = Vector3f(3, 1);
@@ -1291,13 +1142,13 @@ diane_octomap::Line* diane_octomap::DianeOctomap::FitLineWithMatrix(diane_octoma
         leafA(1, 0) = LineA->Leafs_Of_Line(1, i);
         leafA(2, 0) = LineA->Leafs_Of_Line(2, i);
 
-        //Se estiver vazia, inclui a nova folha
+        //If the Matrix is empty, includes the new line
         if(Result_Line->Leafs_Of_Line.cols() == 0)
         {
             int Actual_Size = Result_Line->Leafs_Of_Line.cols();
             Result_Line->Leafs_Of_Line.conservativeResize(3, Actual_Size + 1);
 
-            //Adicionando as informacoes da nova folha
+            //Including the new leaf's informations
             Result_Line->Leafs_Of_Line(0, Actual_Size) = leafA(0, 0);
             Result_Line->Leafs_Of_Line(1, Actual_Size) = leafA(1, 0);
             Result_Line->Leafs_Of_Line(2, Actual_Size) = leafA(2, 0);
@@ -1305,13 +1156,13 @@ diane_octomap::Line* diane_octomap::DianeOctomap::FitLineWithMatrix(diane_octoma
         }
         else
         {
-            //Se não estiver vazia, verifica se a folha já pertence à Matriz
+            //If it is not, verify if the leaf is not contained in the Matrix.
             if((GroupContainsLeaf(Result_Line->Leafs_Of_Line, leafA)) == false)
             {
                 int Actual_Size = Result_Line->Leafs_Of_Line.cols();
                 Result_Line->Leafs_Of_Line.conservativeResize(3, Actual_Size + 1);
 
-                //Adicionando as informacoes da nova folha
+                //If it is not, includes the new leaf's informations
                 Result_Line->Leafs_Of_Line(0, Actual_Size) = leafA(0, 0);
                 Result_Line->Leafs_Of_Line(1, Actual_Size) = leafA(1, 0);
                 Result_Line->Leafs_Of_Line(2, Actual_Size) = leafA(2, 0);
@@ -1329,13 +1180,13 @@ diane_octomap::Line* diane_octomap::DianeOctomap::FitLineWithMatrix(diane_octoma
         leafB(1, 0) = LineB->Leafs_Of_Line(1, j);
         leafB(2, 0) = LineB->Leafs_Of_Line(2, j);
 
-        //Se estiver vazia, inclui a nova folha
+        //If the Matrix is empty, includes the new line
         if(Result_Line->Leafs_Of_Line.cols() == 0)
         {
             int Actual_Size = Result_Line->Leafs_Of_Line.cols();
             Result_Line->Leafs_Of_Line.conservativeResize(3, Actual_Size + 1);
 
-            //Adicionando as informacoes da nova folha
+            //Including the new leaf's informations
             Result_Line->Leafs_Of_Line(0, Actual_Size) = leafB(0, 0);
             Result_Line->Leafs_Of_Line(1, Actual_Size) = leafB(1, 0);
             Result_Line->Leafs_Of_Line(2, Actual_Size) = leafB(2, 0);
@@ -1343,13 +1194,13 @@ diane_octomap::Line* diane_octomap::DianeOctomap::FitLineWithMatrix(diane_octoma
         }
         else
         {
-            //Se não estiver vazia, verifica se a folha já pertence à Matriz
+            //If it is not, verify if the leaf is not contained in the Matrix.
             if((GroupContainsLeaf(Result_Line->Leafs_Of_Line, leafB)) == false)
             {
                 int Actual_Size = Result_Line->Leafs_Of_Line.cols();
                 Result_Line->Leafs_Of_Line.conservativeResize(3, Actual_Size + 1);
 
-                //Adicionando as informacoes da nova folha
+                //If it is not, includes the new leaf's informations
                 Result_Line->Leafs_Of_Line(0, Actual_Size) = leafB(0, 0);
                 Result_Line->Leafs_Of_Line(1, Actual_Size) = leafB(1, 0);
                 Result_Line->Leafs_Of_Line(2, Actual_Size) = leafB(2, 0);
@@ -1402,11 +1253,9 @@ vector<diane_octomap::Line*> diane_octomap::DianeOctomap::SortGroupLines(vector<
 
     }
 
-    //Se ocorreu um swap, chama novamente o Sort passando o novo grupo
+    //If an swap happened, calls the sort again, passing the new group (recursive call)
     if(swap_break)
     {
-        //Pegando os Lines que estavam antes do 1o (não sofreram swap)
-
         for(int ii=0; ii<i; ii++)
         {
             TempGroup.push_back(GroupLines.at(ii));
@@ -1425,7 +1274,6 @@ vector<diane_octomap::Line*> diane_octomap::DianeOctomap::SortGroupLines(vector<
             TempGroup.push_back(GroupLines.at(kk));
         }
 
-        //Recursão para ordenar o novo grupo
         SortedGroup = SortGroupLines(TempGroup);
 
     }
@@ -1439,7 +1287,7 @@ vector<diane_octomap::Line*> diane_octomap::DianeOctomap::SortGroupLines(vector<
 }
 
 
-//Buscando uma sequência válida de Lines dentro do grupo de Lines, que será um candidato à escada
+//Looking for a valid sequence of Lines inside the Group of Lines. If a valid sequence is found, the Group becomes a Stair candidate.
 vector<vector<diane_octomap::Line*>> diane_octomap::DianeOctomap::SequenceFilter(vector<vector<Line *>> lines)
 {
     vector<vector<Line*>> FilteredSequence;
@@ -1460,12 +1308,10 @@ vector<vector<diane_octomap::Line*>> diane_octomap::DianeOctomap::SequenceFilter
 bool diane_octomap::DianeOctomap::VerifyLineSequence(vector<Line*> Group_Lines)
 {
     vector<double> Rhos;
-//    double dist = 0.35;
-    double Tol_Z = 0.30; //0.10
 
     double minZFirstStep = Group_Lines.at(0)->min_Z;
 
-    if(fabs(minZFirstStep) < Tol_Z)
+    if(fabs(minZFirstStep) < SequenceZMax)
     {
         for(int j=0; j<Group_Lines.size(); j++)
         {
@@ -1484,7 +1330,7 @@ bool diane_octomap::DianeOctomap::VerifyLineSequence(vector<Line*> Group_Lines)
                     double dist2 = fabs(Rhos.at(l) - Rhos.at(m));
 
 
-                    if(((dist1 >= Min_Step_Width) && (dist1 <= Max_Step_Width)) && ((dist2 >= Min_Step_Width) && (dist2 <= Max_Step_Width))  )
+                    if(((dist1 >= SequenceMinStepWidth) && (dist1 <= SequenceMaxStepWidth)) && ((dist2 >= SequenceMinStepWidth) && (dist2 <= SequenceMaxStepWidth))  )
                     {
                         return true;
                     }
@@ -1495,7 +1341,8 @@ bool diane_octomap::DianeOctomap::VerifyLineSequence(vector<Line*> Group_Lines)
 
         }
     }
-    //Se não encontrou uma sequencia, retorna false
+
+    //If no sequence was found, returns false
     return false;
 
 }
@@ -1517,7 +1364,7 @@ vector<diane_octomap::Stair*> diane_octomap::DianeOctomap::CreateStairCandidates
 
             Step* NewStep = new Step();
 
-            //Repassando as folhas do objeto Line para o objeto Degrau
+            //Passing the Line's leafs to the Step object
             NewStep->Leafs_Of_Step = line->Leafs_Of_Line;
 
             NewStep->Step_Line = line;
@@ -1537,7 +1384,7 @@ vector<diane_octomap::Stair*> diane_octomap::DianeOctomap::CreateStairCandidates
 }
 
 
-//Método para atualizar as propriedades da escada (Executando os mínimos quadrados para cada degrau de cada escada, para buscar retas melhores em cada escada)
+//Updating the stair properties (Executing Least Square for each Step object, to find the optimized line of each Stair)
 void diane_octomap::DianeOctomap::UpdateStairProperties(vector<Stair*> StairCandidates)
 {
     for(int i=0; i<StairCandidates.size(); i++)
@@ -1547,7 +1394,7 @@ void diane_octomap::DianeOctomap::UpdateStairProperties(vector<Stair*> StairCand
         double Sum_Theta = 0.0;
         double Mean_Theta = 0.0;
 
-        //Para cada degrau, executa mínimos quadrados sobre as folhas para encontrar uma reta melhor
+        //Executing Least Square for each Step object
         for(int j=0; j<stair->Num_Steps; j++)
         {
             Step* step = stair->Steps.at(j);
@@ -1557,7 +1404,7 @@ void diane_octomap::DianeOctomap::UpdateStairProperties(vector<Stair*> StairCand
             Sum_Theta = Sum_Theta + step->Step_Line->Line_Theta;
         }
 
-        //Encontrando o Theta médio e atualizando nos degraus
+        //Finding the Mean value of Theta and updating the Steps
         Mean_Theta = Sum_Theta/stair->Num_Steps;
 
         for(int k=0; k<stair->Num_Steps; k++)
@@ -1570,7 +1417,7 @@ void diane_octomap::DianeOctomap::UpdateStairProperties(vector<Stair*> StairCand
 }
 
 
-//Modelando a escada
+//Modelling the Stair
 vector<diane_octomap::Stair*> diane_octomap::DianeOctomap::ModelStairsWithMatrix(vector<diane_octomap::Stair*>& Stair_Candidates)
 {
     vector<Stair*> Modeled_Stairs;
@@ -1579,26 +1426,22 @@ vector<diane_octomap::Stair*> diane_octomap::DianeOctomap::ModelStairsWithMatrix
     {
         Stair* stair = Stair_Candidates.at(i);
 
-        //Passando para a escada todas as folhas presentes nos seus degraus e calculando os X, Y e Z mínimos e máximos
+        //Copying to the Stair object, every leafs contained in the Steps objects of this Stair. Calculating minimum and maximum values of (X, Y, Z)
         stair->ExtractLeafsFromStepsMatrix();
         stair->CalculateStairPropertiesWithMatrix();
 
-        //Ordenando os degraus da escada de acordo com a posicão média Z de cada degrau, em ordem crescente
+        //Sorting the Steps of a Stair by the mean value of Z of each Step.
         stair->SortSteps();
 
 
-        //Modelando a escada utilizando a Matriz de folhas
+        //Modelling a Stair object, using the leaf Matrix
         stair->ModelStair2DWithMatrix(Octree_Resolution);
 
-
-        //Aplicando um filtro de padrões de escada
-        if((stair->Step_Height >= 0.14) && (stair->Step_Height <= 0.23) && (stair->Step_Width >= 0.24) && (stair->Step_Width <= 0.36))
+        //Applying a filter of Stair Defaut Values
+        if((stair->Step_Height >= ModellingMinStepHeight) && (stair->Step_Height <= ModellingMaxStepHeight) && (stair->Step_Width >= ModellingMinStepWidth) && (stair->Step_Width <= ModellingMaxStepWidth))
         {
             Modeled_Stairs.push_back(stair);
         }
-
-//        Modeled_Stairs.push_back(stair);
-
 
     }
 
@@ -1607,25 +1450,224 @@ vector<diane_octomap::Stair*> diane_octomap::DianeOctomap::ModelStairsWithMatrix
 
 
 
-//Método de escrita de candidato à escada em um arquivo para plot
-void diane_octomap::DianeOctomap::WriteStairCandidateToFileWithMatrix(diane_octomap::Stair* Stair)
+////Método de escrita de candidato à escada em um arquivo para plot
+//void diane_octomap::DianeOctomap::WriteStairCandidateToFileWithMatrix(diane_octomap::Stair* Stair)
+//{
+//    ofstream stairfile("/home/derekchan/Dropbox/Projeto Final/Arquivos/stair_candidate.txt");
+
+//    stairfile << "A = [";
+
+//    for(int i=0; i<Stair->Leafs_Of_Stair.cols(); i++)
+//    {
+//        stairfile << Stair->Leafs_Of_Stair(0, i) << ", " << Stair->Leafs_Of_Stair(1, i) << ", " << Stair->Leafs_Of_Stair(2, i) << ";";
+
+//    }
+
+
+
+
+
+//    stairfile << "];" << endl;
+//    stairfile.close();
+
+//}
+
+
+
+///Storing Methods for Publishing
+
+void diane_octomap::DianeOctomap::ExtractColumnFilteredPoints(vector<MatrixXf> LeafColumns)
 {
-    ofstream stairfile("/home/derekchan/Dropbox/Projeto Final/Arquivos/stair_candidate.txt");
+    First_Filtered_Points.conservativeResize(3, octree->getNumLeafNodes());
 
-    stairfile << "A = [";
+    int First_Filtered_Count = 0;
 
-    for(int i=0; i<Stair->Leafs_Of_Stair.cols(); i++)
+    for(int i=0; i<LeafColumns.size(); ++i)
     {
-        stairfile << Stair->Leafs_Of_Stair(0, i) << ", " << Stair->Leafs_Of_Stair(1, i) << ", " << Stair->Leafs_Of_Stair(2, i) << ";";
+        for(int j=0; j<LeafColumns.at(i).cols(); ++j)
+        {
+            //Adicionando a folha na estrutura referente para o vídeo
+            First_Filtered_Points(0, First_Filtered_Count) = (double)LeafColumns.at(i)(0, j);
+            First_Filtered_Points(1, First_Filtered_Count) = (double)LeafColumns.at(i)(1, j);
+            First_Filtered_Points(2, First_Filtered_Count) = (double)LeafColumns.at(i)(2, j);
+
+            ++First_Filtered_Count;
+
+        }
 
     }
 
+    First_Filtered_Points.conservativeResize(3, First_Filtered_Count);
+
+}
+
+void diane_octomap::DianeOctomap::ExtractHoughLinesPoints(vector<vector<Line*>> Lines)
+{
+    for (int i=0; i<Lines.size(); i++)
+    {
+        for(int j=0; j<Lines.at(i).size(); j++)
+        {
+            Line* line = Lines.at(i).at(j);
+
+            //Calculando o "a" da reta e um ponto da reta
+            float a;
+
+            if(line->Line_Theta > 90 && line->Line_Theta < 270)
+            {
+                a = tan((270 - line->Line_Theta) * (M_PI/180));
+            }
+            else
+            {
+                a = tan((90 + line->Line_Theta) * (M_PI/180));
+            }
+
+            float p_x = line->Line_Rho * cos(line->Line_Theta * M_PI/180);
+            float p_y = line->Line_Rho * sin(line->Line_Theta * M_PI/180);
 
 
+            //Calculando os pontos iniciais e finais
+
+            MatrixXf LinePoints = MatrixXf(3, 2);
+
+            LinePoints(0,0) = SpaceXMin;
+            LinePoints(1,0) = p_y + a*(SpaceXMin - p_x);
+            LinePoints(2,0) = line->Line_Z;
+
+            LinePoints(0,1) = SpaceXMax;
+            LinePoints(1,1) = p_y + a*(SpaceXMax - p_x);
+            LinePoints(2,1) = line->Line_Z;
+
+            HoughLinesPoints.push_back(LinePoints);
+
+        }
+
+    }
+
+}
 
 
-    stairfile << "];" << endl;
-    stairfile.close();
+void diane_octomap::DianeOctomap::ExtractFilteredHoughLinesPoints(vector<vector<Line*>> Filtered_Groups)
+{
+    for(int i=0; i<Filtered_Groups.size(); i++)
+    {
+        for(int j=0; j<Filtered_Groups.at(i).size(); j++)
+        {
+            Line* line = Filtered_Groups.at(i).at(j);
+
+            //Calculando o "a" da reta e um ponto da reta
+            float a;
+
+            if(line->Line_Theta > 90 && line->Line_Theta < 270)
+            {
+                a = tan((270 - line->Line_Theta) * (M_PI/180));
+            }
+            else
+            {
+                a = tan((90 + line->Line_Theta) * (M_PI/180));
+            }
+
+            float p_x = line->Line_Rho * cos(line->Line_Theta * M_PI/180);
+            float p_y = line->Line_Rho * sin(line->Line_Theta * M_PI/180);
+
+
+            //Calculando os pontos iniciais e finais
+
+            MatrixXf LinePoints = MatrixXf(3, 2);
+
+            LinePoints(0,0) = SpaceXMin;
+            LinePoints(1,0) = p_y + a*(SpaceXMin - p_x);
+            LinePoints(2,0) = line->Line_Z;
+
+            LinePoints(0,1) = SpaceXMax;
+            LinePoints(1,1) = p_y + a*(SpaceXMax - p_x);
+            LinePoints(2,1) = line->Line_Z;
+
+            FilteredHoughLinesPoints.push_back(LinePoints);
+
+        }
+
+    }
+
+}
+
+
+void diane_octomap::DianeOctomap::ExtractSequencedLinesSegmentsPoints(vector<vector<diane_octomap::Line*>> Filtered_Sequence)
+{
+    //Obtaining the sequenced Line segment's points for plotting
+    for(int m=0; m<Filtered_Sequence.size(); m++)
+    {
+        for(int n=0; n<Filtered_Sequence.at(m).size(); n++)
+        {
+            Line* line = Filtered_Sequence.at(m).at(n);
+
+            line->SortLeafMatrixByX();
+
+            //Evaluating the line's "a" value and a finding a point in the line
+            float a;
+
+            if(line->Line_Theta > 90 && line->Line_Theta < 270)
+            {
+                a = tan((270 - line->Line_Theta) * (M_PI/180));
+            }
+            else
+            {
+                a = tan((90 + line->Line_Theta) * (M_PI/180));
+            }
+
+            float p_x = line->Line_Rho * cos(line->Line_Theta * M_PI/180);
+            float p_y = line->Line_Rho * sin(line->Line_Theta * M_PI/180);
+
+
+            //Selecting the minimum and maximum values of X-coordinate in the Line
+            float Min_X, Max_X;
+
+            Min_X = line->Leafs_Of_Line(0, 0);
+            Max_X = line->Leafs_Of_Line(0, line->Leafs_Of_Line.cols() - 1);
+
+
+            //Finding the inicial and final points in the line
+            if(fabs((line->max_Z - line->min_Z)) < 0.40)
+            {
+                for(int o=0; o<=round(fabs((line->max_Z - line->min_Z))/0.05); ++o)
+                {
+                    MatrixXf LinePoints = MatrixXf(3, 2);
+
+                    LinePoints(0,0) = Min_X;
+                    LinePoints(1,0) = p_y + a*(Min_X - p_x);
+                    LinePoints(2,0) = line->min_Z + 0.05*o;
+
+                    LinePoints(0,1) = Max_X;
+                    LinePoints(1,1) = p_y + a*(Max_X - p_x);
+                    LinePoints(2,1) = line->min_Z + 0.05*o;
+
+                    SequencedLinesSegmentsPoints.push_back(LinePoints);
+
+                }
+
+            }
+            else
+            {
+                for(int p=0; p<4; ++p)
+                {
+                    MatrixXf LinePoints = MatrixXf(3, 2);
+
+                    LinePoints(0,0) = Min_X;
+                    LinePoints(1,0) = p_y + a*(Min_X - p_x);
+                    LinePoints(2,0) = line->max_Z - 0.05*p;
+
+                    LinePoints(0,1) = Max_X;
+                    LinePoints(1,1) = p_y + a*(Max_X - p_x);
+                    LinePoints(2,1) = line->max_Z - 0.05*p;
+
+                    SequencedLinesSegmentsPoints.push_back(LinePoints);
+
+                }
+
+            }
+
+        }
+
+    }
 
 }
 
@@ -2934,7 +2976,7 @@ void diane_octomap::Stair::SortSteps()
 
     map<double, int> Mean_Index_Map;
 
-    //Ordenando os degraus em ordem crescente da média de Z
+    //Sorting the Stairway's Steps in crescent order of the mean Z-coordinate
     for(int i=0; i<Steps.size(); i++)
     {
         Mean_Index_Map.insert(pair<double, int>(Steps.at(i)->Step_Mean_Z, i));
@@ -2942,7 +2984,7 @@ void diane_octomap::Stair::SortSteps()
 
     for(map<double, int>::iterator itr = Mean_Index_Map.begin(); itr != Mean_Index_Map.end(); itr++)
     {
-        //Adicionando o degrau no vetor ordenado
+        //Adding the Step in the sorted vector
         SortedSteps.push_back(Steps.at(itr->second));
     }
 
@@ -2983,7 +3025,7 @@ void diane_octomap::Stair::ExtractLeafsFromStepsMatrix()
     {
         Step* step = Steps.at(i);
 
-        //Calculando propriedades do degrau (Será utilizado na ordenacão)
+        //Calculating the Step properties (will be used in the sorting)
         step->CalculateStepPropertiesWithMatrix();
 
         for(int j=0; j<step->Leafs_Of_Step.cols(); j++)
@@ -3062,10 +3104,10 @@ void diane_octomap::Stair::CalculateStairProperties()
 
 void diane_octomap::Stair::CalculateStairPropertiesWithMatrix()
 {
-    //Ordenando a matriz de folhas por Z
+    //Sorting the Leaf Matrix by Z-coordinate
     SortLeafMatrixByZInStair();
 
-    //Obtendo o menor Z e o maior Z das folhas contidas na escada
+    //Getting the minimum and maximum values of Z-coordinate
     Min_Z = Leafs_Of_Stair(2, 0);
     Max_Z = Leafs_Of_Stair(2, Leafs_Of_Stair.cols() - 1);
 
@@ -3074,7 +3116,7 @@ void diane_octomap::Stair::CalculateStairPropertiesWithMatrix()
 
 void diane_octomap::Stair::SortLeafMatrixByZInStair()
 {
-    //Obtendo a ordem dos índices ordenados pelo Z das folhas
+    //Obtaining the order of indexes, ordered by the Z-coordinates of the leafs
     MatrixXi Indexes;
     MatrixXf SortedMatrix;
 
@@ -3548,13 +3590,13 @@ void diane_octomap::Stair::ModelStair2D(double Octree_Resolution)
 
 void diane_octomap::Stair::ModelStair2DWithMatrix(double Octree_Resolution)
 {
-    //***Obtendo a altura da escada e a altura media dos degraus dessa escada (O candidato com 4 degraus - o primeiro degrau não passou pelos filtros - está gerando uma altura errada)
+    //Obtaining the stairway total height, the mean height of the stairway's Steps
     Total_Height = ((Max_Z + Octree_Resolution/2) - (Min_Z - Octree_Resolution/2));
     Step_Height = Total_Height/Num_Steps;
 
 
-    //***Obtendo a largura (aproximada) da escada e a largura média de cada degrau
-    //***Obter o centróide do primeiro degrau (estará muito próximo da face mais externa) e calcular a distância até o plano do último degrau (estará próximo ao final)
+    //Obtaining the total width of the stairway and and the mean width of the Steps
+    //Obtain the centroid of the first Step (it will be really close to the extern face) and evaluate the distance to the plane of the last step.
     Step* First_Step = Steps.at(0);
     Step* Last_Step = Steps.back();
 
@@ -3567,7 +3609,7 @@ void diane_octomap::Stair::ModelStair2DWithMatrix(double Octree_Resolution)
     Last_Plane_Param.push_back(90);
 
 
-    //Calculando o centróide do primeiro degrau
+    //Getting the centroid of the first step
     double X_Sum = 0.0;
     double Y_Sum = 0.0;
     double Z_Sum = 0.0;
@@ -3581,13 +3623,13 @@ void diane_octomap::Stair::ModelStair2DWithMatrix(double Octree_Resolution)
     First_Step_Centroid.push_back((Z_Sum)/First_Step->Leafs_Of_Step.cols());
 
 
-    //Obtendo a distância do centróide até o plano do último degrau
+    //Getting the distance of the centroid to the plane of the last step
     double rho = Last_Plane_Param.at(0);
     double theta = Last_Plane_Param.at(1) * (M_PI/180);
     double phi = Last_Plane_Param.at(2) * (M_PI/180);
 
 
-    //Definindo a normal do plano do último degrau
+    //Defining the normal vector of the plane of the last step
     double n[3];
     n[0] = cos(theta)*sin(phi);
     n[1] = sin(theta)*sin(phi);
@@ -3597,16 +3639,15 @@ void diane_octomap::Stair::ModelStair2DWithMatrix(double Octree_Resolution)
 
     double Partial_Width = abs(First_Centroid_Rho - rho);
     Step_Width = Partial_Width/(Num_Steps - 1);
-    Total_Width = Step_Width*Num_Steps; //Desconsiderando que o último degrau terá uma largura maior
+    Total_Width = Step_Width*Num_Steps; //Not considering that the last step will have a larger width
 
 
 
+    //Obtaining the pair of points(1 of the first step and 1 of the last step) that are the most farther from one another
+    //This distance will be considered as the total ddiagonal of the stair. Project the points in z=0. Project one of the points to the plane of the other
+    //The resulting distance will be the length of the stair
 
-    //Obtendo o par de pontos (1 do 1o degrau e 1 do último degrau) que possuem a maior distância entre si
-    //Essa distância será considerada a diagonal total da escada. Projetar os pontos no z=0. Projetar um dos dois pontos para o plano do outro (paralelo ao plano encontrado)
-    //A distância resultante será o comprimento da escada
-
-    //Obtendo o par que possui a maior distância entre si
+    //Obtaining the pair that are the most farther from one another
     vector<vector<double>> Selected_Points;
 
     double Points_Distance = 0.0;
@@ -3649,7 +3690,7 @@ void diane_octomap::Stair::ModelStair2DWithMatrix(double Octree_Resolution)
     }
 
 
-    //Projetando os dois pontos no plano que passa pela centróide do primeiro degrau
+    //Projecting the two points in the vertical plane that passes through the centroid of the first step
     double First_Point_Rho = Selected_Points.at(0).at(0) * n[0] + Selected_Points.at(0).at(1) * n[1] + Selected_Points.at(0).at(2) * n[2];
 //    double First_Dist = abs(First_Point_Rho - First_Centroid_Rho);
     double First_Dist = First_Centroid_Rho - First_Point_Rho;
@@ -3682,7 +3723,7 @@ void diane_octomap::Stair::ModelStair2DWithMatrix(double Octree_Resolution)
     Last_Projected_Centroid_Point.push_back(Selected_Points.at(1).at(2) + Last_Projection_Centroid_Vector.at(2));
 
 
-    //Projetando os dois pontos resultantes no plano horizontal do menor nível detectado de escada (subtraindo metade da resolucao para chegar teoricamente ao chão)
+    //Projecting the two resultant points in the horizontal plane of the lower detected level of the stair (subtracting half the resolution to obtain points in the floor)
     double n_min[3];
     n_min[0] = 0;
     n_min[1] = 0;
@@ -3720,7 +3761,7 @@ void diane_octomap::Stair::ModelStair2DWithMatrix(double Octree_Resolution)
     Last_Projected_Point.push_back(Last_Projected_Centroid_Point.at(2) + Last_Projection_Vector.at(2));
 
 
-    //Calculando o comprimento da escada e definindo a aresta inicial (inferior do 1o degrau)
+    //Calculating the length of the stair and defining the inicial line (inferior of the first step)
     Total_Length = sqrt(pow(abs(First_Projected_Point.at(0) - Last_Projected_Point.at(0)), 2) + pow(abs(First_Projected_Point.at(1) - Last_Projected_Point.at(1)), 2));
     Step_Length = Total_Length;
 
@@ -3729,13 +3770,13 @@ void diane_octomap::Stair::ModelStair2DWithMatrix(double Octree_Resolution)
 
 
 
-    //Encontrando a direcao para onde a largura deve ser adicionada
+    //Finding the direction to where the width must be added
     double n_dir[2];
     n_dir[0] = cos(theta);
     n_dir[1] = sin(theta);
 
 
-    //Calculando os pontos que definem a escada
+    //Calculainting the points that define the stair
     vector<double> NewPointA = First_Projected_Point;
     vector<double> NewPointB = Last_Projected_Point;
 
@@ -3744,14 +3785,14 @@ void diane_octomap::Stair::ModelStair2DWithMatrix(double Octree_Resolution)
 
     for(int i=0; i<Num_Steps; i++)
     {
-        //Criando os pontos das quinas (somando a altura --- sempre em Z)
+        //Creating the points of the edges
         NewPointA.at(2) = NewPointA.at(2) + Step_Height;
         NewPointB.at(2) = NewPointB.at(2) + Step_Height;
 
         Points.push_back(NewPointA);
         Points.push_back(NewPointB);
 
-        //Alterando o X e Y dos pontos para que se desloquem paralelamente ao plano
+        //Altering (X, Y) coordinates to move alongside the direction found
         NewPointA.at(0) = NewPointA.at(0) + n_dir[0]*Step_Width;
         NewPointA.at(1) = NewPointA.at(1) + n_dir[1]*Step_Width;
 
@@ -3765,7 +3806,7 @@ void diane_octomap::Stair::ModelStair2DWithMatrix(double Octree_Resolution)
 
 
 
-    //Calculando a angulacão do plano da escada (em graus)
+    //Calculating the stair alpha value (in degrees)
     Plane_Alpha = atan(Step_Height/Step_Width) * (180/M_PI);
     if(Plane_Alpha > 90)
     {
