@@ -46,6 +46,7 @@ class DianeOctomapNodelet : public DianeOctomap, public nodelet::Nodelet
      //Declarando os Publishers das Mensagens
      ros::Publisher msgOctomapFullMapPub;
      ros::Publisher msgOctomapOccupiedMarkerPub;
+     ros::Publisher msgOccupiedBoundingBoxMarkerPub;
      ros::Publisher msgOctomapFreeMarkerPub;
 
      ros::Publisher msgModeledStairVisualPub;
@@ -91,6 +92,8 @@ class DianeOctomapNodelet : public DianeOctomap, public nodelet::Nodelet
      void PublishOctomapFullMap();
 
      void PublishOccupiedMarker();
+
+     void PublishOccupiedBoundingBoxMarker();
 
      void PublishStairModelsVisual(vector<Stair*> Modeled_Stairs);
 

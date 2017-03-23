@@ -12,10 +12,12 @@
    <node pkg="nodelet" type="nodelet" name="diane_octomap" args="load diane_octomap/DianeOctomapNodelet $(arg manager)">
 	
 	<!--Octomap's Parameters-->
-	<param name="otFileName" type="str" value="/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_video_objetos_5_final.ot" />
+	<!--<param name="otFileName" type="str" value="/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_video_objetos_5_final.ot" />-->
+	<param name="otFileName" type="str" value="/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Escada_Laser.ot" />
 
 
 	<!--BoundingBox's Parameters-->
+	<!--
 	<param name="BoundingBoxMinPointX" type="double" value="-5" />
 	<param name="BoundingBoxMinPointY" type="double" value="-5" />
 	<param name="BoundingBoxMinPointZ" type="double" value="0.20" />
@@ -23,6 +25,17 @@
 	<param name="BoundingBoxMaxPointX" type="double" value="5" />
 	<param name="BoundingBoxMaxPointY" type="double" value="100" />
 	<param name="BoundingBoxMaxPointZ" type="double" value="100" />
+	-->
+
+
+	<param name="BoundingBoxMinPointX" type="double" value="-5" />
+	<param name="BoundingBoxMinPointY" type="double" value="-100" />
+	<param name="BoundingBoxMinPointZ" type="double" value="0" />
+
+	<param name="BoundingBoxMaxPointX" type="double" value="5" />
+	<param name="BoundingBoxMaxPointY" type="double" value="0" />
+	<param name="BoundingBoxMaxPointZ" type="double" value="1.8" />
+
 
 
 	<!--Octomap's Parameters-->
