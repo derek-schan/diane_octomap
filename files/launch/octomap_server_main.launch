@@ -20,7 +20,7 @@
 
 	<!--LASER-->
 
-	<node pkg="tf" type="static_transform_publisher" name="simple_tf_laser_broadcaster_node" args="0.6 0 0 0 -1.6 0 velodyne map 100" />
+	<node pkg="tf" type="static_transform_publisher" name="simple_tf_laser_broadcaster_node" args="0 0.7 0 0 1.6 1.6 velodyne map 100" />	
 	
 	
 	<node pkg="velodyne_driver" type="velodyne_node" name="velodyne_node" >
