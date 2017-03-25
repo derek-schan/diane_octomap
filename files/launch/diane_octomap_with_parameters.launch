@@ -12,79 +12,81 @@
    <node pkg="nodelet" type="nodelet" name="diane_octomap" args="load diane_octomap/DianeOctomapNodelet $(arg manager)">
 	
 	<!--Octomap's Parameters-->
-	<!--<param name="otFileName" type="str" value="/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_video_objetos_5_final.ot" />-->
-	<param name="otFileName" type="str" value="/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Escada_Laser.ot" />
+		<param name="otFileName" type="str" value="/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_video_objetos_5_final.ot" />
+		<!--<param name="otFileName" type="str" value="/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Laser_5_Ajustada.ot" />-->
 
 
 	<!--BoundingBox's Parameters-->
-	<!--
-	<param name="BoundingBoxMinPointX" type="double" value="-5" />
-	<param name="BoundingBoxMinPointY" type="double" value="-5" />
-	<param name="BoundingBoxMinPointZ" type="double" value="0.20" />
+		<!-- Kinect - The MinPointZ value is 0.20 because the ground is 20 cm above the 0 level. -->
 
-	<param name="BoundingBoxMaxPointX" type="double" value="5" />
-	<param name="BoundingBoxMaxPointY" type="double" value="100" />
-	<param name="BoundingBoxMaxPointZ" type="double" value="100" />
-	-->
+		<param name="BoundingBoxMinPointX" type="double" value="-5" />
+		<param name="BoundingBoxMinPointY" type="double" value="-5" />
+		<param name="BoundingBoxMinPointZ" type="double" value="0.20" />
+
+		<param name="BoundingBoxMaxPointX" type="double" value="5" />
+		<param name="BoundingBoxMaxPointY" type="double" value="100" />
+		<param name="BoundingBoxMaxPointZ" type="double" value="100" />
+		
 
 
-	<param name="BoundingBoxMinPointX" type="double" value="-5" />
-	<param name="BoundingBoxMinPointY" type="double" value="-100" />
-	<param name="BoundingBoxMinPointZ" type="double" value="0" />
+		<!-- Laser - The MaxPointZ value is 2.8 to remove the ceiling. The ceiling makes the algorithm not detect any stairs. -->
 
-	<param name="BoundingBoxMaxPointX" type="double" value="5" />
-	<param name="BoundingBoxMaxPointY" type="double" value="0" />
-	<param name="BoundingBoxMaxPointZ" type="double" value="1.8" />
+		<!--
+		<param name="BoundingBoxMinPointX" type="double" value="-5" />
+		<param name="BoundingBoxMinPointY" type="double" value="-5" />
+		<param name="BoundingBoxMinPointZ" type="double" value="0" />
 
+		<param name="BoundingBoxMaxPointX" type="double" value="5" />
+		<param name="BoundingBoxMaxPointY" type="double" value="100" />
+		<param name="BoundingBoxMaxPointZ" type="double" value="2.8" />
+		-->
 
 
 	<!--Octomap's Parameters-->
-	<param name="ColumnMinSize" type="int" value="0" />
-	<param name="ColumnMaxSize" type="int" value="6" />
+		<param name="ColumnMinSize" type="int" value="2" />
+		<param name="ColumnMaxSize" type="int" value="6" />
 
 
 	<!--Hough Transform's Parameters-->
-	<param name="Rho_Passo" type="double" value="0.05" />
-	<param name="Theta_Passo" type="double" value="5" />
+		<param name="Rho_Passo" type="double" value="0.05" />
+		<param name="Theta_Passo" type="double" value="5" />
 
-	<param name="AccumulateDistTolerance" type="double" value="0.025" />
-	<param name="MinAmountVotes" type="int" value="10" />
+		<param name="AccumulateDistTolerance" type="double" value="0.025" />
+		<param name="MinAmountVotes" type="int" value="10" />
 
 
 	<!--Grouped Line's by (Rho, Theta) Parameters-->
-	<param name="MinNumberLines" type="int" value="3" />
-	<param name="MaxNumberLines" type="int" value="6" />
+		<param name="MinNumberLines" type="int" value="3" />
+		<param name="MaxNumberLines" type="int" value="6" />
 
 
 	<!--Segmentation's Parameters-->
-	<param name="SegmentationXTol" type="double" value="0.11" />
+		<param name="SegmentationXTol" type="double" value="0.16" />
 
 
 	<!--Grouped Line's by (Theta, X-Interval) Parameters-->
-	<param name="IntervalXTol" type="double" value="0.15" />
+		<param name="IntervalXTol" type="double" value="0.15" />
 
 
 	<!--Filtering Grouped Line's by quantity of Line Parameters-->
-	<param name="MinNumSteps" type="int" value="3" />
+		<param name="MinNumSteps" type="int" value="3" />
 
 
 	<!--Merge Group's Lines by (Rho) Parameters-->
-	<param name="MergeDeltaRhoTol" type="double" value="0.11" />
+		<param name="MergeDeltaRhoTol" type="double" value="0.11" />
 
 
 	<!--Sequence Filter's Parameters-->
-	<param name="SequenceZMax" type="double" value="0.30" />
-	<param name="SequenceMinStepWidth" type="double" value="0.23" />
-	<param name="SequenceMaxStepWidth" type="double" value="0.38" />
+		<param name="SequenceZMax" type="double" value="0.30" />
+		<param name="SequenceMinStepWidth" type="double" value="0.23" />
+		<param name="SequenceMaxStepWidth" type="double" value="0.38" />
 
 
 	<!--Stair Modelling's Parameters-->
-	<param name="ModellingMinStepHeight" type="double" value="0.14" />
-	<param name="ModellingMaxStepHeight" type="double" value="0.23" />
-	<param name="ModellingMinStepWidth" type="double" value="0.24" />
-	<param name="ModellingMaxStepWidth" type="double" value="0.36" />
-
-
+		<param name="ModellingMinStepHeight" type="double" value="0" />
+		<param name="ModellingMaxStepHeight" type="double" value="0.23" />
+		<param name="ModellingMinStepWidth" type="double" value="0.24" />
+		<param name="ModellingMaxStepWidth" type="double" value="0.36" />
 
 
 
