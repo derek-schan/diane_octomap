@@ -335,8 +335,7 @@ void diane_octomap::DianeOctomapNodelet::PublishStairModelsVisual(vector<diane_o
         line_list.color.g = 0.42;
         line_list.color.b = 0.0;
         line_list.color.a = 1.0;
-//        for(int j = 0; j < Modeled_Stairs.size() ; ++j)
-        for(int j = 0; j < 1 ; ++j)
+        for(int j = 0; j < Modeled_Stairs.size() ; ++j)
         {
             for (int i = 0; i < Modeled_Stairs.at(j)->Points.size(); ++i)
             {
@@ -783,64 +782,68 @@ void diane_octomap::DianeOctomapNodelet::PublishStairModelPoints()
 {
     if(Modeled_Stairs.size() > 0)
     {
-        size_t ModeledPointsSize = Modeled_Stairs.at(0)->Leafs_Of_Stair.cols();
-        if (ModeledPointsSize <= 1)
-        {
-            ROS_WARN("Nothing to publish, modeled stair has no points stored.");
-            return;
-        }
-
         // init markers of occupied voxels:
         visualization_msgs::MarkerArray StairModelPoints;
 
-        //Only has one array:
-        StairModelPoints.markers.resize(1);
-
-        //Configuring the color
-        std_msgs::ColorRGBA _color; _color.r = (0.0); _color.g = (0.78); _color.b = (0.36); _color.a = 1.0;
-
-        //Completing the StairModelPoints MarkerArray
-        for(int i=0; i<Modeled_Stairs.at(0)->Leafs_Of_Stair.cols(); ++i)
+        for(int k=0; k<Modeled_Stairs.size(); ++k)
         {
-            float x = Modeled_Stairs.at(0)->Leafs_Of_Stair(0, i);
-            float y = Modeled_Stairs.at(0)->Leafs_Of_Stair(1, i);
-            float z = Modeled_Stairs.at(0)->Leafs_Of_Stair(2, i);
-
-            //create marker:
-            geometry_msgs::Point cubeCenter;
-            cubeCenter.x = x;
-            cubeCenter.y = y;
-            cubeCenter.z = z;
-
-            StairModelPoints.markers[0].points.push_back(cubeCenter);
-
-            //Definindo a cor (Branco somente para visualizacão)
-            StairModelPoints.markers[0].colors.push_back(_color);
-        }
-
-        ros::Time rostime = ros::Time::now();
-
-        for(unsigned int j=0; j < StairModelPoints.markers.size(); ++j)
-        {
-            //Obtendo a quantidade de voxels na octree na profundidade indicada
-            double size = Modeled_Stairs.at(0)->Leafs_Of_Stair.cols();
-
-            StairModelPoints.markers[j].header.frame_id = "/map";
-            StairModelPoints.markers[j].header.stamp = rostime;
-            StairModelPoints.markers[j].ns = "map";
-            StairModelPoints.markers[j].id = j;
-            StairModelPoints.markers[j].type = visualization_msgs::Marker::CUBE_LIST;
-            StairModelPoints.markers[j].scale.x = 0.05;
-            StairModelPoints.markers[j].scale.y = 0.05;
-            StairModelPoints.markers[j].scale.z = 0.05;
-
-            if(StairModelPoints.markers[j].points.size() > 0)
+            size_t ModeledPointsSize = Modeled_Stairs.at(k)->Leafs_Of_Stair.cols();
+            if (ModeledPointsSize <= 1)
             {
-                StairModelPoints.markers[j].action = visualization_msgs::Marker::ADD;
+                ROS_WARN("Nothing to publish, modeled stair has no points stored.");
+                return;
             }
-            else
+
+
+            //Only has one array:
+            StairModelPoints.markers.resize(1);
+
+            //Configuring the color
+            std_msgs::ColorRGBA _color; _color.r = (0.0); _color.g = (0.78); _color.b = (0.36); _color.a = 1.0;
+
+            //Completing the StairModelPoints MarkerArray
+            for(int i=0; i<Modeled_Stairs.at(k)->Leafs_Of_Stair.cols(); ++i)
             {
-                StairModelPoints.markers[j].action = visualization_msgs::Marker::DELETE;
+                float x = Modeled_Stairs.at(k)->Leafs_Of_Stair(0, i);
+                float y = Modeled_Stairs.at(k)->Leafs_Of_Stair(1, i);
+                float z = Modeled_Stairs.at(k)->Leafs_Of_Stair(2, i);
+
+                //create marker:
+                geometry_msgs::Point cubeCenter;
+                cubeCenter.x = x;
+                cubeCenter.y = y;
+                cubeCenter.z = z;
+
+                StairModelPoints.markers[0].points.push_back(cubeCenter);
+
+                //Definindo a cor (Branco somente para visualizacão)
+                StairModelPoints.markers[0].colors.push_back(_color);
+            }
+
+            ros::Time rostime = ros::Time::now();
+
+            for(unsigned int j=0; j < StairModelPoints.markers.size(); ++j)
+            {
+                //Obtendo a quantidade de voxels na octree na profundidade indicada
+
+                StairModelPoints.markers[j].header.frame_id = "/map";
+                StairModelPoints.markers[j].header.stamp = rostime;
+                StairModelPoints.markers[j].ns = "map";
+                StairModelPoints.markers[j].id = j;
+                StairModelPoints.markers[j].type = visualization_msgs::Marker::CUBE_LIST;
+                StairModelPoints.markers[j].scale.x = 0.05;
+                StairModelPoints.markers[j].scale.y = 0.05;
+                StairModelPoints.markers[j].scale.z = 0.05;
+
+                if(StairModelPoints.markers[j].points.size() > 0)
+                {
+                    StairModelPoints.markers[j].action = visualization_msgs::Marker::ADD;
+                }
+                else
+                {
+                    StairModelPoints.markers[j].action = visualization_msgs::Marker::DELETE;
+                }
+
             }
 
         }
