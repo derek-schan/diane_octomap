@@ -400,7 +400,7 @@ vector<MatrixXf> diane_octomap::DianeOctomap::GroupLeafsByXY(MatrixXf Leafs)
     {
         MatrixXf LeafColumn = GroupedXYTemp.at(k);
 
-        if((LeafColumn.cols()>ColumnMinSize) && (LeafColumn.cols()<ColumnMaxSize))
+        if((LeafColumn.cols()>=ColumnMinSize) && (LeafColumn.cols()<=ColumnMaxSize))
         {
             GroupedXY.push_back(LeafColumn);
         }
