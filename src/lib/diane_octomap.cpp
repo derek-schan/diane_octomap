@@ -867,7 +867,7 @@ vector<diane_octomap::Line*> diane_octomap::DianeOctomap::SegmentLinesWithMatrix
                 NewLine1->Line_Votes = NewLine1->Leafs_Of_Line.cols();
                 NewLine2->Line_Votes = NewLine2->Leafs_Of_Line.cols();
 
-                //Updateing the limits of the Line's
+                //Updating the limits of the Line's
                 NewLine1->UpdateLimitsWithMatrix();
                 NewLine2->UpdateLimitsWithMatrix();
 
