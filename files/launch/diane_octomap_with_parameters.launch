@@ -12,11 +12,14 @@
    <node pkg="nodelet" type="nodelet" name="diane_octomap" args="load diane_octomap/DianeOctomapNodelet $(arg manager)">
 	
 	<!--Octomap's Parameters-->
-		<param name="otFileName" type="str" value="/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Vídeo/Escada_video_objetos_5_final.ot" />
+		<param name="otFileName" type="str" value="/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Utilizados/Kinect/Funcionais/Escada_video_objetos_5_final.ot" />
 
 		<!--<param name="otFileName" type="str" value="/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Laser_5.ot" />-->
-		<!--<param name="otFileName" type="str" value="/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Laser_5_Ajustada.ot" />-->
-		<!--<param name="otFileName" type="str" value="/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Laser_Horizontal_5.ot" />-->
+		<!--<param name="otFileName" type="str" value="/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Utilizados/Laser/Funcionais/Escada_Laser_5_Ajustada.ot" />-->
+		<!--<param name="otFileName" type="str" value="/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Laser/Escada_Principal_Laser_5.ot" />-->
+
+
+		<!--<param name="otFileName" type="str" value="/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Utilizados/Laser/Funcionais/Escada_Laser_Horizontal_5.ot" />-->
 
 
 	<!--BoundingBox's Parameters-->
@@ -38,7 +41,7 @@
 		<!--
 		<param name="BoundingBoxMinPointX" type="double" value="-5" />
 		<param name="BoundingBoxMinPointY" type="double" value="-5" />
-		<param name="BoundingBoxMinPointZ" type="double" value="0" />
+		<param name="BoundingBoxMinPointZ" type="double" value="-0.5" />
 
 		<param name="BoundingBoxMaxPointX" type="double" value="5" />
 		<param name="BoundingBoxMaxPointY" type="double" value="100" />
@@ -65,11 +68,11 @@
 
 
 	<!--Segmentation's Parameters-->
-		<param name="SegmentationXTol" type="double" value="0.16" />
+		<param name="SegmentationXTol" type="double" value="0.50" />
 
 
 	<!--Grouped Line's by (Theta, X-Interval) Parameters-->
-		<param name="IntervalXTol" type="double" value="0.15" />
+		<param name="IntervalXTol" type="double" value="0.50" />
 
 
 	<!--Filtering Grouped Line's by quantity of Line Parameters-->
