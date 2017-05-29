@@ -1,23 +1,5 @@
 <launch>
 
-	<!--LASER - Iniciando os nós do LASER Velodyne e iniciando o nó da funcão de transferência do Laser para o mapa estático-->
-
-		<!-- start nodelet manager and driver nodelets -->
-<!--		<include file="$(find velodyne_driver)/launch/nodelet_manager.launch" /> -->
-
-		<!-- start cloud nodelet -->
-<!--
-		<include file="$(find velodyne_pointcloud)/launch/cloud_nodelet.launch">
-			<arg name="calibration"
-			 value="$(find velodyne_pointcloud)/params/64e_utexas.yaml"/>
-			<arg name="min_range"
-			 value="0.001"/>
-		</include>
-
-
-		<node pkg="tf" type="static_transform_publisher" name="simple_tf_laser_broadcaster_node" args="0 0 0 0 0 0 velodyne map 100" />
--->
-
 	<!--LASER-->
 
 	<node pkg="tf" type="static_transform_publisher" name="simple_tf_laser_broadcaster_node" args="0 0.7 0 0 1.6 1.6 velodyne map 100" />	

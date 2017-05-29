@@ -3644,7 +3644,7 @@ void diane_octomap::Stair::ModelStair2DWithMatrix(double Octree_Resolution)
 
 
     //Obtaining the pair of points(1 of the first step and 1 of the last step) that are the most farther from one another
-    //This distance will be considered as the total ddiagonal of the stair. Project the points in z=0. Project one of the points to the plane of the other
+    //This distance will be considered as the total diagonal of the stair. Project the points in z=0. Project one of the points to the plane of the other
     //The resulting distance will be the length of the stair
 
     //Obtaining the pair that are the most farther from one another

@@ -22,6 +22,7 @@
 
 #include <octomap_msgs/Octomap.h>
 #include <octomap_msgs/conversions.h>
+#include <octomap_msgs/GetOctomap.h>
 
 #include <visualization_msgs/MarkerArray.h>
 
@@ -43,66 +44,72 @@ class DianeOctomapNodelet : public DianeOctomap, public nodelet::Nodelet
      /// ROS node handle.
      ros::NodeHandle nodeHandle;
 
-     //Declarando os Publishers das Mensagens
-     ros::Publisher msgOctomapFullMapPub;
-     ros::Publisher msgOctomapOccupiedMarkerPub;
-     ros::Publisher msgOccupiedBoundingBoxMarkerPub;
-     ros::Publisher msgOctomapFreeMarkerPub;
 
-     ros::Publisher msgModeledStairVisualPub;
+
+     ///Declaring the Publishers
+//     ros::Publisher msgOctomapFullMapPub;
+
+//     ros::Publisher msgOctomapFreeMarkerPub;
 
      ros::Publisher msgModeledStairPub;
 
      ros::Publisher msgModeledStairAllPub;
 
 
-     //Declarando os Publishers das Mensagens para o vídeo
-     ros::Publisher msgFirstFilteredOccuppiedPointsPub;
 
+     ///Declaring the Publishers needed for Visualization
+     ros::Publisher msgOctomapOccupiedMarkerPub;
+
+     ros::Publisher msgOccupiedBoundingBoxMarkerPub;
+
+     ros::Publisher msgFirstFilteredOccuppiedPointsPub;
 
      ros::Publisher msgHoughLinesPub;
 
-
      ros::Publisher msgFilteredHoughLinesPub;
-
 
      ros::Publisher msgSequencedLinesSegmentsPub;
 
-
      ros::Publisher msgStairModelPointsPub;
 
-
-     //Declarando os Subscribers de Mensagens
-     ros::Subscriber msgBoolSub;
-
-     ros::Subscriber msgOctomapFullMapSub;
+     ros::Publisher msgModeledStairVisualPub;
 
 
-     //Declarando os Servers dos Servicos
-     ros::ServiceServer srvDetectStairsSer;
+
+     ///Declaring the Subscribers
+     ros::Subscriber msgResetOctomapServerSub;              //Subscriber expondo um modo para resetar o Octomap Server;
+
+     ros::Subscriber msgStartVisualizationPublishesSub;     //Subscriber expondo uma maneira de publicar as informações de dentro do algorítmo de uma maneira visual;
 
 
-     //Declarando os Clients dos Servicos
-     //std::vector <ros::ServiceClient> srveposcontrolcli;
+
+     ///Declaring the Services
+     ros::ServiceServer srvDetectStairsFromFileSer;                 //Serviço expondo o método para se requisitar a detecção da escada;
+     ros::ServiceServer srvDetectStairsFromServerSer;                 //Serviço expondo o método para se requisitar a detecção da escada;
+
+
+     ///Declaring the Clients
+     ros::ServiceClient srvResetOctomapServerCli;           //Client para requisitar o Reset do Octomap Server (de modo a limpar o mapa);
+
+     ros::ServiceClient srvRequestFullOctomapCli;           //Client para requisitar o mapa completo contido no Octomap Server;
 
 
 
  protected:
-     //Métodos de Publicacão
-     void PublishOctomapFullMap();
 
-     void PublishOccupiedMarker();
-
-     void PublishOccupiedBoundingBoxMarker();
-
-     void PublishStairModelsVisual(vector<Stair*> Modeled_Stairs);
+     ///Publishing Methods
+//     void PublishOctomapFullMap();
 
      void PublishStairModel(Stair* Modeled_Stair);
 
      void PublishAllStairsModel(vector<Stair*> Modeled_Stairs);
 
 
-     //Métodos de Publicacão para o Vídeo
+     ///Publishing Methods for Visualization
+     void PublishOccupiedMarker();
+
+     void PublishOccupiedBoundingBoxMarker();
+
      void PublishFirstFilteredOccupiedPoints();
 
      void PublishHoughLines();
@@ -113,15 +120,25 @@ class DianeOctomapNodelet : public DianeOctomap, public nodelet::Nodelet
 
      void PublishStairModelPoints();
 
-
-     //Métodos de Callback
-     void TreatBoolCallBack(const std_msgs::Bool::ConstPtr &msg);
-
-     void TreatOctomapFullMapCallback(const octomap_msgs::Octomap::ConstPtr &msg);
+     void PublishStairModelsVisual(vector<Stair*> Modeled_Stairs);
 
 
-     //Método de callback do servico que inicializa a deteccão da escada
-     bool DetectStairsCallback(std_srvs::Empty::Request & req , std_srvs::Empty::Response & res);
+     ///Message Callback Methods
+     void TreatResetOctomapServerCallback(const std_msgs::Bool::ConstPtr &msg);
+
+     void TreatStartVisualizationPublishesCallBack(const std_msgs::Bool::ConstPtr &msg);
+
+
+     ///Services Callback Methods
+     bool TreatDetectStairsFromFileCallback(std_srvs::Empty::Request & req , std_srvs::Empty::Response & res);
+
+     bool TreatDetectStairsFromServerCallback(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
+
+
+     ///Auxiliary Methods
+     bool ResetOctomapServer();
+
+     bool RequestOctomapServerOctree();
 
 
  public:
