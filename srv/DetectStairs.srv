@@ -1,0 +1,7 @@
+---
+bool resultStatus
+string errorDescription
+
+int32 Num_Stairs
+
+StairInfo[] Stairs

@@ -94,10 +94,6 @@ void diane_octomap::DianeOctomapNodelet::onInit()
 
 
     ///Initializing the Publishers
-//    msgOctomapFullMapPub = nodeHandle.advertise <Octomap> (getName() + "/octomap_full", 10, true);
-
-//    msgOctomapFreeMarkerPub = nodeHandle.advertise <visualization_msgs::MarkerArray> (getName() + "/free_cells_vis_array", 10, true);
-
     msgModeledStairPub = nodeHandle.advertise <diane_octomap::StairInfo>(getName() + "/Modeled_Stair_Info", 10);
 
     msgModeledStairAllPub = nodeHandle.advertise <diane_octomap::StairArrayInfo>(getName() + "/Modeled_Stairs_Info_All", 10);
@@ -142,26 +138,6 @@ void diane_octomap::DianeOctomapNodelet::onInit()
     StartInternalCycle();
 
 }
-
-
-////Publishing the octree that is stored in the nodelet (If any other package wants to use it)
-//void diane_octomap::DianeOctomapNodelet::PublishOctomapFullMap()
-//{
-//    Octomap map;
-//    map.header.frame_id = "/map";
-//    map.header.stamp = ros::Time::now();
-
-
-//    if (octomap_msgs::fullMapToMsg(*octree, map))
-//    {
-//        msgOctomapFullMapPub.publish(map);
-//    }
-//    else
-//    {
-//        ROS_ERROR("Error serializing OctoMap");
-//    }
-//}
-
 
 
 void diane_octomap::DianeOctomapNodelet::PublishStairModel(Stair* Modeled_Stair)
@@ -962,7 +938,7 @@ bool diane_octomap::DianeOctomapNodelet::TreatDetectStairsFromFileCallback(std_s
 }
 
 
-bool diane_octomap::DianeOctomapNodelet::TreatDetectStairsFromServerCallback(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res)
+bool diane_octomap::DianeOctomapNodelet::TreatDetectStairsFromServerCallback(diane_octomap::DetectStairs::Request &req, diane_octomap::DetectStairs::Response &res)
 {
     ///Se recebeu uma requisicao para detectar a escada online, inicializa as funcoes de deteccao da escada.
     bool result = false;
@@ -973,16 +949,114 @@ bool diane_octomap::DianeOctomapNodelet::TreatDetectStairsFromServerCallback(std
         ///Obtendo a octree que está armazenada no octomap_server (não será mais obtida de um arquivo) ---> A ser testado com um Kinect (incluir validacão de octree vazia)
         if(RequestOctomapServerOctree())
         {
-            ///Filtrando e armazenando as folhas da octree que estejam dentro da Bounding Box definida no método e que estejam ocupadas.
-            DianeOctomap::GetOccupiedLeafsOfBBX(octree);
+            ///Garantindo que a octree obtida possui informações
+            if(octree->size() > 0)
+            {
+                ///Filtrando e armazenando as folhas da octree que estejam dentro da Bounding Box definida no método e que estejam ocupadas.
+                DianeOctomap::GetOccupiedLeafsOfBBX(octree);
 
-            ///Utilizando as folhas filtradas (presentes no vetor) para detectar as informacões da escada.
-            //DianeOctomap::StairDetection();
-            DianeOctomap::StairDetection2D();
+                ///Utilizando as folhas filtradas (presentes no vetor) para detectar as informacões da escada.
+                //DianeOctomap::StairDetection();
+                DianeOctomap::StairDetection2D();
+
+
+                ///Armazenando as informações das escadas modeladas na resposta do serviço
+                res.Num_Stairs = Modeled_Stairs.size();
+
+                for(int i=0; i<Modeled_Stairs.size(); i++)
+                {
+                    Stair* Modeled_Stair = Modeled_Stairs.at(i);
+
+                    diane_octomap::StairInfo stair_info;
+
+                    stair_info.Total_Length = Modeled_Stair->Total_Length;
+                    stair_info.Total_Width = Modeled_Stair->Total_Width;
+                    stair_info.Total_Height = Modeled_Stair->Total_Height;
+
+                    stair_info.Min_Z = Modeled_Stair->Min_Z;
+                    stair_info.Max_Z = Modeled_Stair->Max_Z;
+
+                    stair_info.Num_Steps = Modeled_Stair->Num_Steps;
+
+                    stair_info.Step_Length = Modeled_Stair->Step_Length;
+                    stair_info.Step_Width = Modeled_Stair->Step_Width;
+                    stair_info.Step_Height = Modeled_Stair->Step_Height;
+
+                    stair_info.Plane_Alpha = Modeled_Stair->Plane_Alpha;
+
+
+                    //(Xi, Yi, Zi, Xf, Yf, Zf) -> Aresta que define a escada regular
+                    vector<float> Aresta;
+
+                    for(int j=0; j<Modeled_Stair->Aresta.size(); j++)
+                    {
+                        for(int k=0; k<Modeled_Stair->Aresta.at(j).size(); k++)
+                        {
+                            Aresta.push_back(Modeled_Stair->Aresta.at(j).at(k));
+                        }
+                    }
+
+
+                    stair_info.Edge_Coordinates = Aresta;
+
+
+                    //Pontos que definem a escada;
+                    vector<float> Pontos;
+
+                    for(int l=0; l<Modeled_Stair->Points.size(); l++)
+                    {
+                        for(int m=0; m<Modeled_Stair->Points.at(l).size(); m++)
+                        {
+                            Pontos.push_back(Modeled_Stair->Points.at(l).at(m));
+                        }
+                    }
+
+                    stair_info.Points_Coordinates = Pontos;
+
+
+                    //Incluindo a escada no array de resposta do serviço
+                    res.Stairs.push_back(stair_info);
+
+                }
+
+                res.resultStatus = true;
+
+                result = true;
+            }
+            else
+            {
+                res.resultStatus = false;
+                res.errorDescription = "The octree retrieved from the octomap server did not contain any information!";
+
+
+                res.Num_Stairs = 0;
+
+                result = true;
+            }
+
+        }
+        else
+        {
+            res.resultStatus = false;
+            res.errorDescription = "The octomap server did not return the octree!";
+
+
+            res.Num_Stairs = 0;
 
             result = true;
 
         }
+
+    }
+    else
+    {
+        res.resultStatus = false;
+        res.errorDescription = "The reset of the octomap server did not work!";
+
+
+        res.Num_Stairs = 0;
+
+        result = true;
 
     }
 

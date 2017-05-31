@@ -29,6 +29,7 @@
 
 #include <diane_octomap/StairInfo.h>
 #include <diane_octomap/StairArrayInfo.h>
+#include <diane_octomap/DetectStairs.h>
 
 
 namespace diane_octomap {
@@ -47,10 +48,6 @@ class DianeOctomapNodelet : public DianeOctomap, public nodelet::Nodelet
 
 
      ///Declaring the Publishers
-//     ros::Publisher msgOctomapFullMapPub;
-
-//     ros::Publisher msgOctomapFreeMarkerPub;
-
      ros::Publisher msgModeledStairPub;
 
      ros::Publisher msgModeledStairAllPub;
@@ -84,8 +81,8 @@ class DianeOctomapNodelet : public DianeOctomap, public nodelet::Nodelet
 
 
      ///Declaring the Services
-     ros::ServiceServer srvDetectStairsFromFileSer;                 //Serviço expondo o método para se requisitar a detecção da escada;
-     ros::ServiceServer srvDetectStairsFromServerSer;                 //Serviço expondo o método para se requisitar a detecção da escada;
+     ros::ServiceServer srvDetectStairsFromFileSer;         //Serviço expondo o método para se requisitar a detecção da escada;
+     ros::ServiceServer srvDetectStairsFromServerSer;       //Serviço expondo o método para se requisitar a detecção da escada;
 
 
      ///Declaring the Clients
@@ -98,8 +95,6 @@ class DianeOctomapNodelet : public DianeOctomap, public nodelet::Nodelet
  protected:
 
      ///Publishing Methods
-//     void PublishOctomapFullMap();
-
      void PublishStairModel(Stair* Modeled_Stair);
 
      void PublishAllStairsModel(vector<Stair*> Modeled_Stairs);
@@ -132,7 +127,7 @@ class DianeOctomapNodelet : public DianeOctomap, public nodelet::Nodelet
      ///Services Callback Methods
      bool TreatDetectStairsFromFileCallback(std_srvs::Empty::Request & req , std_srvs::Empty::Response & res);
 
-     bool TreatDetectStairsFromServerCallback(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
+     bool TreatDetectStairsFromServerCallback(diane_octomap::DetectStairs::Request &req, diane_octomap::DetectStairs::Response &res);
 
 
      ///Auxiliary Methods
