@@ -118,7 +118,8 @@ diane_octomap::DianeOctomap::DianeOctomap()
 //    delta_Phi = 0;
 
 
-
+    ///Initializing octree
+    octree = new OcTree(5);
 
 
 
@@ -221,6 +222,10 @@ void diane_octomap::DianeOctomap::GenerateOcTreeFromFile()
 
         }
 
+    }
+    else
+    {
+        octree->clear();
     }
 
 }

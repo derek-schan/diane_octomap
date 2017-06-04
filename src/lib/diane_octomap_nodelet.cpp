@@ -946,6 +946,8 @@ bool diane_octomap::DianeOctomapNodelet::TreatDetectStairsFromServerCallback(dia
     ///Aplicando um Reset no Octomap Server para que as informações obtidas do mapa sejam referentes às informações atuais dos sensores;
     if(ResetOctomapServer())
     {
+        sleep(1);
+
         ///Obtendo a octree que está armazenada no octomap_server (não será mais obtida de um arquivo) ---> A ser testado com um Kinect (incluir validacão de octree vazia)
         if(RequestOctomapServerOctree())
         {
@@ -1096,12 +1098,18 @@ bool diane_octomap::DianeOctomapNodelet::RequestOctomapServerOctree()
     {
         abs_tree = octomap_msgs::msgToMap(OcTreeRes.map);
 
-        //octreeFromMsg = dynamic_cast<OcTree*>(abs_tree);
         octree = dynamic_cast<OcTree*>(abs_tree);
+
+        //Expanding the octree
+        octree->expand();
 
         Octree_Resolution = octree->getResolution();
 
         result = true;
+    }
+    else
+    {
+        octree->clear();
     }
 
     return result;

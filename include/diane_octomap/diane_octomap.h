@@ -230,7 +230,7 @@ protected:
 
     ///Octomap's Variables (OcTree Structures; Properties; and Structures containing Leafs of Bounding Box; and path to OcTree file)
     OcTree* octree;
-    OcTree* octreeFromMsg;
+
 
     double Octree_Resolution;
 
