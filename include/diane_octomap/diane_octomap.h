@@ -382,7 +382,7 @@ public:
 
 
     //Método para obtencão da octree à partir de um arquivo
-    void GenerateOcTreeFromFile();
+    bool GenerateOcTreeFromFile();
 
 
     //Método para obter e armazenar as folhas contidas dentro de uma Bounding Box (Deixar opcional o uso de uma Bounding Box - Atualmente, o filtro não deveria retirar nenhuma folha)

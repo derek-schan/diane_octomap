@@ -176,8 +176,10 @@ void diane_octomap::DianeOctomap::InternalCycleProcedure()
 
 
 //Gerando a octree à partir de um file (Pode-se substituir para ler uma octree do octomap_server - Será necessário para uma deteccão online)
-void diane_octomap::DianeOctomap::GenerateOcTreeFromFile()
+bool diane_octomap::DianeOctomap::GenerateOcTreeFromFile()
 {
+    bool result;
+
     AbstractOcTree* abs_tree = AbstractOcTree::read(otFileName);
     if(abs_tree) // read error returns NULL
     {
@@ -220,13 +222,23 @@ void diane_octomap::DianeOctomap::GenerateOcTreeFromFile()
             cout << "Número de nós livres: " << free_count << ".\n" << endl;
             cout << "Número de nós totais: " << total_count << ".\n" << endl;
 
+            result = true;
+
+        }
+        else
+        {
+            octree->clear();
+            result = false;
         }
 
     }
     else
     {
         octree->clear();
+        result = false;
     }
+
+    return result;
 
 }
 

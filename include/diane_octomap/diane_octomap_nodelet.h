@@ -125,7 +125,7 @@ class DianeOctomapNodelet : public DianeOctomap, public nodelet::Nodelet
 
 
      ///Services Callback Methods
-     bool TreatDetectStairsFromFileCallback(std_srvs::Empty::Request & req , std_srvs::Empty::Response & res);
+     bool TreatDetectStairsFromFileCallback(diane_octomap::DetectStairs::Request & req , diane_octomap::DetectStairs::Response & res);
 
      bool TreatDetectStairsFromServerCallback(diane_octomap::DetectStairs::Request &req, diane_octomap::DetectStairs::Response &res);
 
