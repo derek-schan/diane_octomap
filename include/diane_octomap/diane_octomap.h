@@ -201,27 +201,6 @@ public:
  */
 class DianeOctomap
 {
-    /// Pointer used to control the thread responsible for the internal
-    ///     cycle.
-    boost::thread* internalThread;
-
-    /// Variable used to tell the controller to stop or not.
-    bool stop;
-
-
-    /*!
-     * \brief InternalThreadFunction calls the function
-     *      DianeOctomap::InternalCycleProcedure().
-     */
-    static void InternalThreadFunction(DianeOctomap* diane_octomap);
-
-    /*!
-     * \brief InternalCycleProcedure calls the function
-     *      DianeOctomap:InternalCycle() from in each period of time
-     *      specified.
-     */
-    virtual void InternalCycleProcedure();
-
 
 protected:
     /// Mutex used to control the internal cycle thread.
@@ -365,20 +344,6 @@ public:
 
 
     void onInit();
-
-
-    /*!
-     * \brief StartInternalCycle starts the internal cycle of the
-     *      controller.
-     */
-    void StartInternalCycle();
-
-
-    /*!
-     * \brief StopInternalCyle waits for the internal cycle to end then
-     *      stops the controller.
-     */
-    void StopInternalCycle();
 
 
     //Método para obtencão da octree à partir de um arquivo

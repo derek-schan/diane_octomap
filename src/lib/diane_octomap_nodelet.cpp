@@ -133,10 +133,6 @@ void diane_octomap::DianeOctomapNodelet::onInit()
     srvRequestFullOctomapCli = nodeHandle.serviceClient<octomap_msgs::GetOctomap>("/octomap_full");
 
 
-
-    ///Inicializing the Thread's Cycle
-    StartInternalCycle();
-
 }
 
 
@@ -1210,5 +1206,4 @@ bool diane_octomap::DianeOctomapNodelet::RequestOctomapServerOctree()
 
 diane_octomap::DianeOctomapNodelet::~DianeOctomapNodelet()
 {
-    StopInternalCycle();
 }

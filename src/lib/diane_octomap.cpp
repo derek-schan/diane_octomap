@@ -12,8 +12,6 @@ using octomap_msgs::Octomap;
 
 diane_octomap::DianeOctomap::DianeOctomap()
 {
-    stop = false;
-
     ///Octomap's Variables (OcTree Structures; Properties; and Structures containing Leafs of Bounding Box; and path to OcTree file)
     OccupiedPoints = MatrixXf();
 
@@ -128,51 +126,8 @@ diane_octomap::DianeOctomap::DianeOctomap()
 
 void diane_octomap::DianeOctomap::onInit()
 {
-    StartInternalCycle();
 }
 
-
-void diane_octomap::DianeOctomap::StartInternalCycle()
-{
-    mutStartStop.lock();
-
-    stop = false;
-
-
-    internalThread = new boost::thread(DianeOctomap::InternalThreadFunction, this);
-
-    mutStartStop.unlock();
-
-}
-
-
-void diane_octomap::DianeOctomap::StopInternalCycle()
-{
-    mutStartStop.lock();
-
-    stop = true;
-    internalThread->join();
-    delete internalThread;
-    internalThread = NULL;
-
-    mutStartStop.unlock();
-
-}
-
-
-void diane_octomap::DianeOctomap::InternalThreadFunction(DianeOctomap* diane_mapper)
-{
-    diane_mapper->InternalCycleProcedure();
-}
-
-
-void diane_octomap::DianeOctomap::InternalCycleProcedure()
-{
-    while (!stop)
-    {
-
-    }
-}
 
 
 //Gerando a octree à partir de um file (Pode-se substituir para ler uma octree do octomap_server - Será necessário para uma deteccão online)
@@ -2735,7 +2690,6 @@ void diane_octomap::DianeOctomap::WriteModeledStairPropertiesToFile(diane_octoma
 
 diane_octomap::DianeOctomap::~DianeOctomap()
 {
-    StopInternalCycle();
 }
 
 
