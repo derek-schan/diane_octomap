@@ -129,8 +129,8 @@ void diane_octomap::DianeOctomapNodelet::onInit()
 
 
     ///Initializing the Clients
-    srvResetOctomapServerCli = nodeHandle.serviceClient<std_srvs::Empty>("/Diane_Octomap/octomap_server_node/reset");
-    srvRequestFullOctomapCli = nodeHandle.serviceClient<octomap_msgs::GetOctomap>("/Diane_Octomap/octomap_full");
+    srvResetOctomapServerCli = nodeHandle.serviceClient<std_srvs::Empty>("/octomap_server_node/reset");
+    srvRequestFullOctomapCli = nodeHandle.serviceClient<octomap_msgs::GetOctomap>("/octomap_full");
 
 
 
@@ -870,47 +870,50 @@ void diane_octomap::DianeOctomapNodelet::TreatResetOctomapServerCallback(const s
 
 void diane_octomap::DianeOctomapNodelet::TreatStartVisualizationPublishesCallBack(const std_msgs::Bool::ConstPtr& msg)
 {
-    //Publishing the occupied voxels of the octree stored.
-    PublishOccupiedMarker();
-
-
-    PublishOccupiedBoundingBoxMarker();
-
-
-    //Publishing the first filtered occupied voxels.
-    PublishFirstFilteredOccupiedPoints();
-
-
-    PublishHoughLines();
-
-
-    PublishFilteredHoughLines();
-
-
-    PublishSequencedLinesSegments();
-
-
-    if(Modeled_Stairs.size() > 0)
+    if(msg->data)
     {
-        //Publishing the markers of all modeled stairs, for visualization.
-        PublishStairModelsVisual(Modeled_Stairs);
-
-        //Publishing information about a modeled stair.
-        PublishStairModel(Modeled_Stairs.at(0));
-
-        //Publishing information about all modeled stairs.
-        PublishAllStairsModel(Modeled_Stairs);
+        //Publishing the occupied voxels of the octree stored.
+        PublishOccupiedMarker();
 
 
-        //Publishing points of the detected stair.
-        PublishStairModelPoints();
+        PublishOccupiedBoundingBoxMarker();
+
+
+        //Publishing the first filtered occupied voxels.
+        PublishFirstFilteredOccupiedPoints();
+
+
+        PublishHoughLines();
+
+
+        PublishFilteredHoughLines();
+
+
+        PublishSequencedLinesSegments();
+
+
+        if(Modeled_Stairs.size() > 0)
+        {
+            //Publishing the markers of all modeled stairs, for visualization.
+            PublishStairModelsVisual(Modeled_Stairs);
+
+            //Publishing information about a modeled stair.
+            PublishStairModel(Modeled_Stairs.at(0));
+
+            //Publishing information about all modeled stairs.
+            PublishAllStairsModel(Modeled_Stairs);
+
+
+            //Publishing points of the detected stair.
+            PublishStairModelPoints();
+
+        }
+        else
+        {
+            ROS_WARN("Nothing to publish! No stairs detected on the map.");
+        }
 
     }
-    else
-    {
-        ROS_WARN("Nothing to publish! No stairs detected on the map.");
-    }
-
 
 }
 
