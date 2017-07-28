@@ -216,6 +216,9 @@ protected:
     vector<OcTree::leaf_bbx_iterator> OccupiedLeafsInBBX;
     MatrixXf OccupiedPoints;
 
+    MatrixXf OccupiedPoints_TF;
+
+    Matrix3f Transfer_Function;
 
     string otFileName;
 

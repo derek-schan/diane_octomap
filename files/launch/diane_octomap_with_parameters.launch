@@ -3,7 +3,7 @@
 	<arg name="manager" default="diane_manager"/>
 	<arg name="namespace" default="r"/>
 
-	<node ns="$(arg namespace)" pkg="nodelet" type="nodelet" name="$(arg manager)" args="manager"/>
+	<!--<node ns="$(arg namespace)" pkg="nodelet" type="nodelet" name="$(arg manager)" args="manager"/>-->
 
 	<node pkg="tf" type="static_transform_publisher" name="simple_tf_diane_octomap_broadcaster_node" args="0 0 0 0 0 0 my_frame map 100" />
 
@@ -12,7 +12,7 @@
 
 
 	<!--Octomap's Parameters-->
-		<param name="otFileName" type="str" value="/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Utilizados/Kinect/Funcionais/Escada_video_objetos_5_final.ot" />
+		<param name="otFileName" type="str" value="/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/lab.thursday.21.30.ot" />
 
 		<!--<param name="otFileName" type="str" value="/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Laser_5.ot" />-->
 		<!--<param name="otFileName" type="str" value="/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Utilizados/Laser/Funcionais/Escada_Laser_5_Ajustada.ot" />-->
@@ -32,7 +32,7 @@
 
 		<param name="BoundingBoxMaxPointX" type="double" value="5" />
 		<param name="BoundingBoxMaxPointY" type="double" value="100" />
-		<param name="BoundingBoxMaxPointZ" type="double" value="100" />
+		<param name="BoundingBoxMaxPointZ" type="double" value="2" />
 		
 
 
@@ -145,7 +145,7 @@
 -->
 
 	<!--OCTOMAP SERVER-->
-
+<!--
 	<node pkg="octomap_server" type="octomap_server_node" name="octomap_server_node" output='screen'>
 		<param name="frame_id" type="string" value="/map" />
 		<param name="resolution" value="0.05" />
@@ -160,10 +160,12 @@
 		<param name="color/a" value="1" />
 			
 		<remap from="cloud_in" to="/camera/depth/points" />
-
+-->
 		<!--Este segundo remap está sobreescrevendo o 1o. Por esse motivo, utilizamos o relay-->
 		<!--<remap from="cloud_in" to="/velodyne_points" />-->
-
+<!--
 	</node>
+
+-->
 
 </launch>

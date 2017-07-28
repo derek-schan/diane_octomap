@@ -15,6 +15,12 @@ diane_octomap::DianeOctomap::DianeOctomap()
     ///Octomap's Variables (OcTree Structures; Properties; and Structures containing Leafs of Bounding Box; and path to OcTree file)
     OccupiedPoints = MatrixXf();
 
+    OccupiedPoints_TF = MatrixXf();
+
+//    Transfer_Function << 0,1,0
+//                        ,1,0,0
+//                        ,0,0,1;
+
 
 //    otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_1.ot";
 //    otFileName = "/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Kinect_Inclinada_1.ot";
@@ -203,27 +209,72 @@ void diane_octomap::DianeOctomap::GetOccupiedLeafsOfBBX(OcTree* octree)
 {
     //Variable that stores the number of points that are inside the Bounding Box
     int Occupied_Points_Count = 0;
+    int Occupied_Points_Count_TF = 0;
 
     OccupiedPoints.conservativeResize(3, octree->getNumLeafNodes());
+    OccupiedPoints_TF.conservativeResize(3, octree->getNumLeafNodes());
 
+    Transfer_Function << 0,1,0
+                        ,1,0,0
+                        ,0,0,1;
 
-    //Storing the coordinates of the occupied leafs contained inside the Bounding Box.
-    for(OcTree::leaf_bbx_iterator bbx_it = octree->begin_leafs_bbx(BoundingBoxMinPoint, BoundingBoxMaxPoint), end=octree->end_leafs_bbx(); bbx_it!= end; ++bbx_it)
+    for(OcTree::leaf_iterator it = octree->begin(), end=octree->end(); it!=end; ++it)
     {
-        if(octree->isNodeOccupied(*bbx_it))
+        if(octree->isNodeOccupied(*it))
         {
-            //Storing the leaf in the vector (Probably unused)
-            OccupiedLeafsInBBX.push_back(bbx_it);
+            //Storing every leaf in the Occupied Points TF
+            OccupiedPoints_TF(0, Occupied_Points_Count_TF) = (double)it.getX();
+            OccupiedPoints_TF(1, Occupied_Points_Count_TF) = (double)it.getY();
+            OccupiedPoints_TF(2, Occupied_Points_Count_TF) = (double)it.getZ();
 
-            //Storing the leaf's coordinates in the Matrix
-            OccupiedPoints(0, Occupied_Points_Count) = (double)bbx_it.getX();
-            OccupiedPoints(1, Occupied_Points_Count) = (double)bbx_it.getY();
-            OccupiedPoints(2, Occupied_Points_Count) = (double)bbx_it.getZ();
-
-            ++Occupied_Points_Count;
+            ++Occupied_Points_Count_TF;
 
         }
     }
+
+    OccupiedPoints_TF = Transfer_Function * OccupiedPoints_TF;
+
+    for(int i=0; i<OccupiedPoints_TF.cols(); ++i)
+    {
+        if(OccupiedPoints_TF(0, i) >= BoundingBoxMinPoint.x() && OccupiedPoints_TF(0, i) <= BoundingBoxMaxPoint.x())
+        {
+            if(OccupiedPoints_TF(1, i) >= BoundingBoxMinPoint.y() && OccupiedPoints_TF(1, i) <= BoundingBoxMaxPoint.y())
+            {
+                if(OccupiedPoints_TF(2, i) >= BoundingBoxMinPoint.z() && OccupiedPoints_TF(2, i) <= BoundingBoxMaxPoint.z())
+                {
+                    OccupiedPoints(0, Occupied_Points_Count) = OccupiedPoints_TF(0, i);
+                    OccupiedPoints(1, Occupied_Points_Count) = OccupiedPoints_TF(1, i);
+                    OccupiedPoints(2, Occupied_Points_Count) = OccupiedPoints_TF(2, i);
+
+                    ++Occupied_Points_Count;
+
+                }
+
+            }
+
+        }
+    }
+
+
+
+//    //Storing the coordinates of the occupied leafs contained inside the Bounding Box.
+//    for(OcTree::leaf_bbx_iterator bbx_it = octree->begin_leafs_bbx(BoundingBoxMinPoint, BoundingBoxMaxPoint), end=octree->end_leafs_bbx(); bbx_it!= end; ++bbx_it)
+//    {
+//        if(octree->isNodeOccupied(*bbx_it))
+//        {
+//            //Storing the leaf in the vector (Probably unused)
+//            OccupiedLeafsInBBX.push_back(bbx_it);
+
+//            //Storing the leaf's coordinates in the Matrix
+//            OccupiedPoints(0, Occupied_Points_Count) = (double)bbx_it.getX();
+//            OccupiedPoints(1, Occupied_Points_Count) = (double)bbx_it.getY();
+//            OccupiedPoints(2, Occupied_Points_Count) = (double)bbx_it.getZ();
+
+//            ++Occupied_Points_Count;
+
+//        }
+//    }
+
 
     OccupiedPoints.conservativeResize(3, Occupied_Points_Count);
 
