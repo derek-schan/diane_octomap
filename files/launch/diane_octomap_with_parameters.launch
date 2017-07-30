@@ -12,6 +12,7 @@
 
 
 	<!--Octomap's Parameters-->
+		<!--<param name="otFileName" type="str" value="/home/diane/catkin_ws/src/diane_octomap/files/MapFiles/Octree/Utilizados/Kinect/Funcionais/Escada_video_objetos_5_final.ot" />-->
 		<param name="otFileName" type="str" value="/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/lab.thursday.21.30.ot" />
 
 		<!--<param name="otFileName" type="str" value="/home/derekchan/catkin_workspace/src/diane_octomap/files/MapFiles/Octree/Escada_Laser_5.ot" />-->
@@ -26,12 +27,12 @@
 		<!-- Kinect - The MinPointZ value is 0.20 because the ground is 20 cm above the 0 level. -->
 
 		
-		<param name="BoundingBoxMinPointX" type="double" value="-5" />
+		<param name="BoundingBoxMinPointX" type="double" value="-2" />
 		<param name="BoundingBoxMinPointY" type="double" value="-5" />
 		<param name="BoundingBoxMinPointZ" type="double" value="0" />
 
-		<param name="BoundingBoxMaxPointX" type="double" value="5" />
-		<param name="BoundingBoxMaxPointY" type="double" value="100" />
+		<param name="BoundingBoxMaxPointX" type="double" value="2" />
+		<param name="BoundingBoxMaxPointY" type="double" value="5" />
 		<param name="BoundingBoxMaxPointZ" type="double" value="2" />
 		
 
@@ -56,10 +57,10 @@
 
 	<!--Hough Transform's Parameters-->
 		<param name="Rho_Passo" type="double" value="0.05" />
-		<param name="Theta_Passo" type="double" value="5" />
+		<param name="Theta_Passo" type="double" value="1" />
 
 		<param name="AccumulateDistTolerance" type="double" value="0.025" />
-		<param name="MinAmountVotes" type="int" value="10" />
+		<param name="MinAmountVotes" type="int" value="8" />
 
 
 	<!--Grouped Line's by (Rho, Theta) Parameters-->
@@ -84,7 +85,7 @@
 
 
 	<!--Sequence Filter's Parameters-->
-		<param name="SequenceZMax" type="double" value="0.30" />
+		<param name="SequenceZMax" type="double" value="0.10" />
 		<param name="SequenceMinStepWidth" type="double" value="0.23" />
 		<param name="SequenceMaxStepWidth" type="double" value="0.38" />
 
